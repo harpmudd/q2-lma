@@ -1,0 +1,4 @@
+# The card's run script and everything else run by sh or python on Linux must keep LF endings:
+# a CRLF launcher fails on the Q2 with nothing on screen but "isn't running".
+* text=auto eol=lf
+*.png binary
