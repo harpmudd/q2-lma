@@ -57,12 +57,19 @@ Older items carry VBR MP3 and Ogg Vorbis derivatives; newer ones may carry only 
 example `wsp2026-06-26`: Flac and VBR MP3). The app prefers Ogg when present (half the size, so
 faster to start), else VBR MP3.
 
-## Starting favourites: 28 artists
+## The developer's own list: 28 artists
 
 The 14 above that are on the archive, plus all 14 alternatives (28). Tedeschi Trucks Band and Derek
 Trucks Band are one entry, as the user listed them, browsing both collections (open question, the
 default until the user says otherwise).
 
 The archive has 9,333 artist collections under `etree` (2026-10-31), so the app reads artists
-live rather than from a fixed list; these 28 are only the starting "My Artists" (see the design).
+live rather than from a fixed list; these 28 are the developer's personal My Artists, put on their card as
+`.lma/my-artists.txt` and used as test data. The app ships with My Artists empty.
 Match on collection identifiers, never on titles: titles vary in spelling and punctuation.
+
+## Finding an artist's identifier
+
+Open the artist's page on archive.org: the identifier is the last part of its address,
+`https://archive.org/details/UmphreysMcGee` → `UmphreysMcGee`. On the Q2 there's no need: hold
+Play/Pause on the artist in All Artists, Top Artists or search.

@@ -6,10 +6,11 @@ Archive's Live Music Archive (`etree`) and streams shows through Stream mode. In
 
 ## Decisions (user, 2026-10-31)
 
-- Artists are read live from the archive; a curated list only seeds **My Artists**.
+- Artists are read live from the archive. **My Artists is each user's own:** it ships empty, and
+  nothing in the app is specific to one person's taste.
 - Played shows **stay on the card up to a cap** (default 2 GB, adjustable), oldest evicted first.
 - No "Download show" in v0.
-- **Shuffle** picks from My Artists.
+- **Shuffle** picks from My Artists (Top Artists while My Artists is empty).
 - Album art: the show's own art if it has some, else the Live Music Archive llama logo.
 
 ## Screens
@@ -19,7 +20,7 @@ under the 400-byte limit.
 
 ```
 Live Music Archive                       op menu
-├─ My Artists                            op mine        28 seeded; hold Play/Pause: remove
+├─ My Artists                            op mine        the user's own; hold Play/Pause: remove
 ├─ All Artists                           op letters     A-Z, 0-9
 │   └─ <letter>                          op letter X    paged, "pages" (500 rows, then More…)
 ├─ Top Artists                           op top         500 most downloaded collections
@@ -125,12 +126,30 @@ As q2-subsonic does, through Stream mode's `.m3u` form (the user's firmware list
 
 ## My Artists and Shuffle
 
-- `.lma/favourites.json`, seeded with the 28 from ARTISTS.md on first run. It isn't in the release
-  zip, so updates keep it.
-- Hold Play/Pause on any artist row adds or removes it (the row's `position` is `fav`).
+My Artists belongs to whoever uses the app. It starts empty for everyone.
+
+- **On the Q2:** hold Play/Pause on any artist row, in All Artists, Top Artists, search results or
+  My Artists, to add or remove it (the row's `position` is `fav`; the toast says which). Empty, My
+  Artists shows one row: "Hold Play/Pause on any artist to add it here".
+- **From a computer:** `.lma/my-artists.txt`, one archive collection identifier per line, with an
+  optional name after a tab or a space and `#` for comments:
+
+  ```
+  # My Artists for q2-lma: one archive.org collection per line
+  GratefulDead    Grateful Dead
+  UmphreysMcGee   Umphreys McGee
+  ```
+
+  The app reads it at each start and rewrites it (by rename) when the user adds or removes on the
+  Q2, keeping comments and order. A line it can't match to a collection shows as "Not found on the
+  archive: <id>", so a typo is visible. ARTISTS.md documents how to find an identifier.
+- The file isn't in the release zip, so App Store updates keep it. Removing the app removes it.
 - A favourite whose collection is gone shows "No longer on the archive".
-- Shuffle: a random favourite, a random year weighted by its show count, a random date, then its
-  best recording, played from the start. "Shuffle <artist>" does the same within one artist.
+- **Shuffle** picks a random artist from My Artists, a random year weighted by its show count, a
+  random date, then its best recording, played from the start. With My Artists empty, it picks from
+  Top Artists and says so. "Shuffle <artist>" does the same within one artist.
+- The developer's own 28 artists (ARTISTS.md) are not shipped. They go on the developer's card as
+  a `my-artists.txt`, and serve as test data.
 
 ## Code layout
 
