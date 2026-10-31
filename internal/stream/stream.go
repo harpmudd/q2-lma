@@ -118,6 +118,22 @@ func (e *Engine) Busy() bool {
 	return e.cur != nil && e.cur.fetching.Load()
 }
 
+// Current is the recording the session plays, "" when none runs.
+func (e *Engine) Current() string {
+	e.mu.Lock()
+	r := e.cur
+	e.mu.Unlock()
+	if r == nil {
+		return ""
+	}
+	select {
+	case <-r.done:
+		return ""
+	default:
+		return r.s.ID
+	}
+}
+
 // Active reports whether a session runs.
 func (e *Engine) Active() bool { a, _, _ := e.Status(); return a }
 
@@ -257,11 +273,15 @@ func (r *run) writeQueue() error {
 	for i := r.s.From; i < len(r.paths); i++ {
 		fmt.Fprintf(&b, "#EXTINF:%d,%s - %s\n%s\n", r.s.Songs[i].Seconds, r.s.Artist, r.s.Songs[i].Title, r.paths[i])
 	}
-	if err := q2.WriteFile(r.queue, []byte(b.String())); err != nil {
-		return err
+	var err error
+	for try := 0; try < 5; try++ { // a reader holding it open fails the rename on some systems
+		if err = q2.WriteFile(r.queue, []byte(b.String())); err == nil {
+			r.wrote = time.Now()
+			return nil
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
-	r.wrote = time.Now()
-	return nil
+	return err
 }
 
 func (r *run) announce(target string) {

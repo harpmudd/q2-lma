@@ -1,77 +1,94 @@
-// q2-lma, probe build: a throwaway Q2 Pod card app that measures what the Live Music Archive app's
-// design depends on (docs/TESTING.md, round 1). It runs its checks once at start, shows each as a
-// row on the Q2 and writes them to .lma/probe.txt; Play test streams three short tracks through
-// Stream mode. Started by the card's run (contrib/shanlingq2/launcher.sh), from /tmp.
+// q2-lma is a Q2 Pod card app (contrib/shanlingq2/README): the Internet Archive's Live Music
+// Archive on the Shanling Q2. It browses artists, years and shows, picks the best recording of a
+// date and streams it through Stream mode (internal/stream). It runs from the card's .lma folder,
+// copied to /tmp first so the card is never kept busy, and draws the Q2's page over Q2SPOT/1.
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"path"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"q2-lma/internal/ia"
+	"q2-lma/internal/mine"
 	"q2-lma/internal/q2"
 	"q2-lma/internal/q2spot"
+	"q2-lma/internal/stream"
 	"q2-lma/internal/tlsroots"
 )
 
 const (
-	version   = "q2-probe-0.1"
-	userAgent = "q2-lma/" + version + " (Shanling Q2 card app)"
-	idleAfter = 15 * time.Minute // exit 0 after this long with no request and nothing running
+	version   = "q2-v0.1"
+	userAgent = "q2-lma/0.1 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
+	idleAfter = 15 * time.Minute // exit 0 after this long with no request, stream or load
+	answerIn  = 8 * time.Second  // a reply within this; the firmware gives up at 15 s
 )
-
-type result struct {
-	name, value string
-	ok          bool
-}
 
 type app struct {
 	dir, card, tmp, sock string
 	log                  *q2.Log
 	hc                   *http.Client
-	start                time.Time
+	ia                   *ia.Client
+	mine                 *mine.List
+	eng                  *stream.Engine
+	loads                loader
 
-	mu       sync.Mutex
-	caps     q2.Caps
-	results  []result
-	total    int
-	checking bool
-	play     *playRun // the latest Play test; nil before the first
-	lastReq  time.Time
+	mu        sync.Mutex
+	set       settings
+	lastReq   time.Time
+	confirmAt time.Time // Clear Cache's first press
+	problem   string    // the last play or shuffle that failed, for the menu
+	problemAt time.Time
+	sizeAt    time.Time // the cache's size, measured at most every 30 s
+	size      int64
 }
 
+// settings is .lma/settings.json. It isn't in the release zip, so updates keep it.
+type settings struct {
+	CacheMB int               `json:"cacheMB"`
+	Prefer  string            `json:"prefer"` // "ogg" or "mp3"
+	Picks   map[string]string `json:"picks"`  // "<artist> <date>": the recording chosen in More Versions
+}
+
+var cacheSteps = []int{512, 1024, 2048, 4096, 8192}
+
 func (a *app) tmpFile(name string) string { return path.Join(a.tmp, "q2-lma"+name) }
+func (a *app) capsHas(w string) bool      { return q2.ReadCaps(path.Join(a.tmp, "q2-addon.caps")).Has(w) }
 
 func main() {
 	dir := flag.String("dir", "/mnt/mmc/.lma", "the app's folder on the card")
 	card := flag.String("card", "/mnt/mmc", "the card's mount point")
 	tmp := flag.String("tmp", "/tmp", "where the firmware's files and the socket live")
+	base := flag.String("archive", "https://archive.org", "archive.org, or a stand-in for tests")
 	flag.Parse()
-	// About 67 MB is free beside the firmware, with no swap: the GC works harder near this rather
+	// About 78 MB is free beside the firmware, with no swap: the GC works harder near this rather
 	// than the kernel's OOM killer picking the app, or the firmware.
 	debug.SetMemoryLimit(48 << 20)
-	os.MkdirAll(*dir, 0o755)
-	a := &app{dir: *dir, card: *card, tmp: *tmp, start: time.Now(), lastReq: time.Now(),
-		log: &q2.Log{Path: path.Join(*dir, "log.txt"), Max: 1 << 20},
-		hc:  &http.Client{Transport: tlsroots.Transport()}}
-	a.sock = a.tmpFile(".browse.sock")
-	a.caps = q2.ReadCaps(path.Join(*tmp, "q2-addon.caps"))
+	a := newApp(*dir, *card, *tmp, *base, &http.Client{Transport: tlsroots.Transport()})
 	log.SetFlags(0)
 	log.SetOutput(a.log)
-	a.log.Printf("start %s pid %d, caps %q", version, os.Getpid(), a.caps.Raw)
+	a.log.Printf("start %s pid %d, caps %q", version, os.Getpid(), q2.ReadCaps(path.Join(*tmp, "q2-addon.caps")).Raw)
 	a.foldCrash()
 	a.setHold(false)
-
+	if time.Now().Before(tlsroots.Floor) { // the clock unset: certificates checked at archive.org's time
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if _, err := tlsroots.Sync(ctx, *base+"/"); err != nil {
+				a.log.Printf("clock: %v", err)
+			}
+		}()
+	}
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 	go func() {
@@ -80,12 +97,74 @@ func main() {
 		a.shutdown()
 		os.Exit(0)
 	}()
-	go a.runChecks()
 	go a.idleWatch()
 	err := q2spot.Serve(a.sock, a.device)
 	a.log.Printf("serve: %v", err)
 	a.shutdown()
 	os.Exit(1)
+}
+
+// newApp is the app with its folders, archive.org at base (a stand-in in tests) through hc.
+func newApp(dir, card, tmp, base string, hc *http.Client) *app {
+	os.MkdirAll(dir, 0o755)
+	a := &app{dir: dir, card: card, tmp: tmp, lastReq: time.Now(), hc: hc,
+		log: &q2.Log{Path: path.Join(dir, "log.txt"), Max: 1 << 20}}
+	a.sock = a.tmpFile(".browse.sock")
+	a.ia = &ia.Client{HTTP: hc, Agent: userAgent, Base: base,
+		Cache: &ia.Cache{Dir: path.Join(dir, "meta"), Max: 20 << 20}}
+	a.mine = mine.Load(path.Join(dir, "my-artists.txt"))
+	a.loadSettings()
+	a.eng = &stream.Engine{
+		Cache: path.Join(dir, "cache"), Queue: path.Join(dir, "queue"),
+		PlayFile: a.tmpFile(".play"), PlayingFile: a.tmpFile(".playing"),
+		Playlist: func() bool { return a.capsHas("playlist") },
+		Fetch:    a.fetchSong, Hold: a.setHold,
+		Cap:  func() int64 { return int64(a.settings().CacheMB) << 20 },
+		Free: func() int64 { return a.free() },
+		Log:  a.log.Printf,
+		Poll: time.Second, Gap: 2100 * time.Millisecond, // FAT keeps mtimes in 2 s
+		Backoff: []time.Duration{2 * time.Second, 8 * time.Second, 30 * time.Second},
+		NetWait: 15 * time.Second, Idle: 10 * time.Minute,
+	}
+	return a
+}
+
+func (a *app) loadSettings() {
+	s := settings{CacheMB: 2048, Prefer: "ogg"}
+	if b, err := os.ReadFile(path.Join(a.dir, "settings.json")); err == nil {
+		json.Unmarshal(b, &s)
+	}
+	ok := false
+	for _, v := range cacheSteps {
+		ok = ok || v == s.CacheMB
+	}
+	if !ok {
+		s.CacheMB = 2048
+	}
+	if s.Prefer != "mp3" {
+		s.Prefer = "ogg"
+	}
+	if s.Picks == nil {
+		s.Picks = map[string]string{}
+	}
+	a.set = s
+}
+
+func (a *app) settings() settings {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.set
+}
+
+// change edits the settings and saves them.
+func (a *app) change(f func(*settings)) {
+	a.mu.Lock()
+	f(&a.set)
+	b, _ := json.MarshalIndent(a.set, "", "  ")
+	a.mu.Unlock()
+	if err := q2.WriteFile(path.Join(a.dir, "settings.json"), b); err != nil {
+		a.log.Printf("settings: %v", err)
+	}
 }
 
 // foldCrash copies what the launcher kept of a failed run (its stderr, a panic's trace, its exit
@@ -104,7 +183,8 @@ func (a *app) foldCrash() {
 	a.log.Printf("the last run failed:\n%s", s)
 }
 
-// setHold writes the status file: hold=1 keeps standby and auto power-off away while files move.
+// setHold writes the status file: hold=1 keeps standby and auto power-off away, only while a
+// download runs (never for a paused session: the songs ahead are already on the card).
 func (a *app) setHold(hold bool) {
 	s := "version=" + version + "\n"
 	if hold {
@@ -115,9 +195,29 @@ func (a *app) setHold(hold bool) {
 	}
 }
 
-// shutdown leaves no socket, status or play request behind. Streamed songs stay: the firmware may
-// still be playing them, and the next Play test clears them.
+func (a *app) free() int64 {
+	free, _, err := diskSpace(a.card)
+	if err != nil {
+		return 1 << 40 // not on the Q2 (a host run): don't stop for it
+	}
+	return int64(free)
+}
+
+// cacheSize is the audio cache's bytes, measured again at most every 30 s.
+func (a *app) cacheSize() int64 {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if time.Since(a.sizeAt) > 30*time.Second {
+		a.size, a.sizeAt = stream.Size(a.eng.Cache), time.Now()
+	}
+	return a.size
+}
+
+func (a *app) forgetSize() { a.mu.Lock(); a.sizeAt = time.Time{}; a.mu.Unlock() }
+
+// shutdown stops fetching and leaves no socket, status or play request behind. The songs stay.
 func (a *app) shutdown() {
+	a.eng.Stop()
 	os.Remove(a.sock)
 	os.Remove(a.tmpFile(".state"))
 	os.Remove(a.tmpFile(".play"))
@@ -126,79 +226,12 @@ func (a *app) shutdown() {
 func (a *app) idleWatch() {
 	for range time.Tick(30 * time.Second) {
 		a.mu.Lock()
-		idle := time.Since(a.lastReq) >= idleAfter && !a.checking && (a.play == nil || !a.play.live())
+		quiet := time.Since(a.lastReq) >= idleAfter
 		a.mu.Unlock()
-		if idle {
+		if quiet && !a.eng.Active() && !a.loads.running() {
 			a.log.Printf("idle, exiting")
 			a.shutdown()
 			os.Exit(0)
 		}
 	}
-}
-
-func (a *app) device(req q2spot.Request) q2spot.Reply {
-	a.mu.Lock()
-	a.lastReq = time.Now()
-	a.mu.Unlock()
-	switch req.Op {
-	case "menu":
-		return a.menu()
-	case "play":
-		return a.startPlay()
-	case "stop": // an ok reply closes the page (addon.c got()); exit once it has gone out
-		a.log.Printf("stopped from the Q2")
-		go func() {
-			time.Sleep(500 * time.Millisecond)
-			a.shutdown()
-			os.Exit(0)
-		}()
-		return q2spot.Reply{Message: "Probe stopped"}
-	}
-	a.log.Printf("unknown op %q %q", req.Op, req.Args)
-	return q2spot.Fail(q2spot.Unsupported, "Unknown request: "+req.Op)
-}
-
-func info(title, sub string) q2spot.Row {
-	return q2spot.Row{Kind: q2spot.KindInfo, Title: title, Subtitle: sub}
-}
-
-// menu is the only list: progress or a summary, Play test, every result, Quit. It asks the
-// firmware to refresh it every 2 s while checks or a Play test run.
-func (a *app) menu() q2spot.Reply {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	var rows []q2spot.Row
-	live := a.checking
-	if a.checking {
-		done, sub := len(a.results), fmt.Sprintf("%d of %d", len(a.results), a.total)
-		if a.caps.Has("progress") {
-			rows = append(rows, q2spot.Row{Kind: q2spot.KindProgress, Title: "Running checks", Subtitle: sub,
-				Position: strconv.Itoa(done * 1000 / a.total)})
-		} else {
-			rows = append(rows, info("Running checks", sub))
-		}
-	} else {
-		failed := 0
-		for _, r := range a.results {
-			if !r.ok {
-				failed++
-			}
-		}
-		rows = append(rows, info(fmt.Sprintf("Checks done: %d failed", failed), "Saved to .lma/probe.txt"))
-	}
-	sub := "MP3, Ogg, MP3: Cornell 5/8/77"
-	if p := a.play; p != nil {
-		sub = p.status()
-		live = live || p.live()
-	}
-	rows = append(rows, q2spot.Row{Kind: q2spot.KindAction, URI: "play", Title: "Play test", Subtitle: sub})
-	for _, r := range a.results {
-		rows = append(rows, info(r.name, r.value))
-	}
-	rows = append(rows, q2spot.Row{Kind: q2spot.KindAction, URI: "stop", Title: "Quit probe"})
-	msg := ""
-	if live {
-		msg = q2spot.Refresh
-	}
-	return q2spot.Reply{Message: msg, Rows: rows}
 }
