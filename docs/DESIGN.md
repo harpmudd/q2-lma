@@ -13,6 +13,57 @@ Archive's Live Music Archive (`etree`) and streams shows through Stream mode. In
 - **Shuffle** picks from My Artists (Top Artists while My Artists is empty).
 - Album art: the show's own art if it has some, else the Live Music Archive llama logo.
 
+## Following the existing apps
+
+Q2 Pod's maintainer (DiamondBond) reviews every app added to the App Store, and has no written
+style guide. These conventions come from the firmware's own Spotify browser, the two Go card apps
+he accepted (andsuor/q2-subsonic, m-d-e-v/q2-podcasts), and his reviews (q2-pod #145-#150, #163,
+m-d-e-v/q2-qobuz#1). Where they agree, q2-lma does the same.
+
+**On screen**
+- Rows are Title Case: "Search Artists", "More Versions", "Turn Off Live Music Archive".
+- Subtitles carry counts and state, parts joined with " · ": "SBD · 4.8★ · 23 versions".
+- Empty lists say so plainly in one row: "No shows yet", "Nothing found". Loading shows
+  "Loading…" with the ellipsis character.
+- A screen that can't load at all answers a non-ok status with one line of English (`offline`,
+  `throttled`, `error`), so the firmware shows it with **Retry**, as its Spotify browser does. A
+  problem that leaves the rest usable is an info row plus a Details row, last in the list, as
+  Subsonic does.
+- Rows that come and go (stream errors) go last, so the rows above keep their places under the
+  cursor.
+- The main menu asks to `refresh` only while something changes (a download, a background load),
+  as Podcasts does.
+- Settings rows show their value and step it on a press, toasting the new one ("Cache Size:
+  4 GB"); the last row is "Version 0.1", as Subsonic's.
+- The last menu row is **Turn Off Live Music Archive** (`stop`), with when it turns off by itself
+  as its subtitle, as Podcasts' "Turn Off Podcasts". The app exits after 15 minutes unused.
+- Only features the firmware lists in `/tmp/q2-addon.caps` are used: `progress` rows only with
+  `progress`, otherwise `info` text.
+- `q2app`: `name=Live Music Archive`, `search=Search artists`, `qr=0`. Icons `icon.png` (52 px) and
+  `icon-40.png` (40 px), made from the llama logo; white on black, so the Minimal theme's greying
+  suits it.
+
+**Repository** (same layout as Subsonic and Podcasts)
+- `cmd/q2-lma`, `internal/…`, `contrib/shanlingq2/` with `README`, `build.sh`, `package.py`,
+  `launcher.sh`, `q2app`, the icons and `test_launcher.py`.
+- `const version = "q2-vX.Y"` in main.go; tag `q2-vX.Y`; release zip `q2-lma-vX.Y-<sha>.zip`, the
+  release's only `.zip` asset, holding only `.lma/` and no settings.
+- `.github/workflows/ci.yml` (vet, gofmt, tests, `test_launcher.py`, the Q2 build) and
+  `release.yml` (on a tag: the same checks, then publish), with Go pinned to a supported release.
+- `CHANGELOG.md` with an Unreleased section; README sections Install, Use, Files, Limits, Errors
+  and logs, Update and remove, Build, License.
+- Code comments explain why and name the firmware code they rely on (`addon.c`'s limits, Stream
+  mode rules), as both apps' do.
+
+**Behaviour the maintainer asked for in reviews**
+- `hold=1` only while a download runs; no standby hold for a paused session.
+- Ids and file names from the network are checked in one place before they reach a path.
+- Certificates are never checked at a time before a date built into the binary.
+- Network errors don't use up a song's tries; they wait and back off.
+- Nothing the user is playing is evicted from the cache.
+- Logs carry no secrets (this app has none) and never keep the card busy.
+- Removing the app leaves nothing behind outside `.lma/`.
+
 ## Screens
 
 Each screen is one Q2SPOT/1 level. Op names stay under 16 bytes; contexts are identifiers, well
@@ -26,8 +77,10 @@ Live Music Archive                       op menu
 ├─ Top Artists                           op top         500 most downloaded collections
 ├─ Search Artists                        search row     op search TERM
 ├─ Shuffle a Show                        action shuffle
-├─ Now Streaming                         op playing     only while a session runs (refresh)
-└─ Settings                              op settings    cache size, clear cache, card space, version
+├─ Settings                              op settings    Cache Size: 2 GB, Clear Cache, Version 0.1
+├─ Turn Off Live Music Archive           action stop    "It also turns off after 15 minutes unused"
+└─ (while streaming) Couldn't stream "Scarlet Begonias"   info, then a Details row; last, so the
+                                                          rows above keep their places
 
 <artist>                                 op artist ID   hold on any artist row: add/remove My Artists
 ├─ Shuffle <artist>                      action shuffle ID
