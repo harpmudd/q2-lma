@@ -1,0 +1,43 @@
+2026-10-31 12:49:49 start q2-probe-0.1 pid 1212, caps "playlist progress pages library"
+2026-10-31 12:49:49 check App (0s): q2-probe-0.1, go1.27.0 linux/mipsle
+2026-10-31 12:49:49 check Kernel (0s): Linux version 5.10.21+ (chenyou@server1-dell) (mips-linux-gnu-gcc (Codescape GNU Tools 2020.06-01 for MIPS MTI Linux) 9.3.0, GNU ld (Codescape GNU Tools 2020.06-01 for MIPS MTI Linux) 2.31.1) #251 SMP PREEMPT Mon Aug 10 18:06:05 CST 2026
+2026-10-31 12:49:49 check CPU (0s): xburst2-based, Ingenic XBurst II V0.0  FPU V0.0, 2 cores
+2026-10-31 12:49:49 check Memory (0s): total 117884 kB, available 78756 kB
+2026-10-31 12:49:49 check Card space (0s): 415.7 GB free of 512.6 GB
+2026-10-31 12:49:50 check Card write (240ms): 4.2 MB in 0.2 s = 18.15 MB/s
+2026-10-31 12:49:50 check Firmware features (0s): playlist progress pages library
+2026-10-31 12:49:50 check Clock (1ms): 2026-10-31 12:49:49 UTC
+2026-10-31 12:49:50 check DNS (5ms): archive.org: 1 addresses (207.241.224.2) in 5 ms
+2026-10-31 12:49:50 check Server time (306ms): 2026-10-31 12:49:50 UTC, system clock off by 0s
+2026-10-31 12:49:50 check Search (467ms): 421 items for 1977, 50 rows in 0.5 s
+2026-10-31 12:49:51 check Show files (216ms): 20 MP3, 20 Ogg; 30 KB in 0.2 s
+2026-10-31 12:49:53 check Download speed (2.504s): 4.2 MB in 2.5 s = 1.68 MB/s from dn720303.ca.archive.org
+2026-10-31 12:49:53 check Memory used (1ms): RSS 10828 kB, Go heap 2.4 MB of 9.9 MB
+2026-10-31 12:50:06 play: m3u mode, .play 1793451006376313909 /mnt/mmc/.lma/stream/queue-1793451006376313909.m3u
+2026-10-31 12:50:08 play: 01 - Mama Tried.mp3 4157440 bytes in 2.138s from dn720303.ca.archive.org
+2026-10-31 12:50:09 play: playing /mnt/mmc/.lma/stream/01 - Mama Tried.mp3
+2026-10-31 12:50:10 play: 02 - Take A Step Back.ogg 1169255 bytes in 1.657s from dn720303.ca.archive.org
+2026-10-31 12:50:11 play: 03 - Saint Stephen (end).mp3 2716160 bytes in 1.724s from ia600106.us.archive.org
+2026-10-31 12:51:37 stopped from the Q2
+2026-10-31 12:51:41 start q2-probe-0.1 pid 1296, caps "playlist progress pages library"
+2026-10-31 12:51:41 check App (0s): q2-probe-0.1, go1.27.0 linux/mipsle
+2026-10-31 12:51:41 check Kernel (0s): Linux version 5.10.21+ (chenyou@server1-dell) (mips-linux-gnu-gcc (Codescape GNU Tools 2020.06-01 for MIPS MTI Linux) 9.3.0, GNU ld (Codescape GNU Tools 2020.06-01 for MIPS MTI Linux) 2.31.1) #251 SMP PREEMPT Mon Aug 10 18:06:05 CST 2026
+2026-10-31 12:51:41 check CPU (0s): xburst2-based, Ingenic XBurst II V0.0  FPU V0.0, 2 cores
+2026-10-31 12:51:41 check Memory (0s): total 117884 kB, available 78608 kB
+2026-10-31 12:51:41 check Card space (0s): 415.6 GB free of 512.6 GB
+2026-10-31 12:51:41 check Card write (250ms): 4.2 MB in 0.2 s = 17.17 MB/s
+2026-10-31 12:51:41 check Firmware features (0s): playlist progress pages library
+2026-10-31 12:51:41 check Clock (0s): 2026-10-31 12:51:40 UTC
+2026-10-31 12:51:41 check DNS (11ms): archive.org: 1 addresses (207.241.224.2) in 11 ms
+2026-10-31 12:51:41 check Server time (322ms): 2026-10-31 12:51:41 UTC, system clock off by -1s
+2026-10-31 12:51:41 check Search (339ms): 421 items for 1977, 50 rows in 0.3 s
+2026-10-31 12:51:42 check Show files (112ms): 20 MP3, 20 Ogg; 30 KB in 0.1 s
+2026-10-31 12:51:43 play: m3u mode, .play 1793451103907763288 /mnt/mmc/.lma/stream/queue-1793451103907763288.m3u
+2026-10-31 12:51:44 check Download speed (2.448s): 4.2 MB in 2.4 s = 1.72 MB/s from ia600106.us.archive.org
+2026-10-31 12:51:44 check Memory used (2ms): RSS 10852 kB, Go heap 2.5 MB of 9.9 MB
+2026-10-31 12:51:47 play: 01 - Mama Tried.mp3 4157440 bytes in 3.112s from dn720303.ca.archive.org
+2026-10-31 12:51:48 play: 02 - Take A Step Back.ogg 1169255 bytes in 1.055s from dn720303.ca.archive.org
+2026-10-31 12:51:49 play: 03 - Saint Stephen (end).mp3 2716160 bytes in 1.472s from dn720303.ca.archive.org
+2026-10-31 12:51:51 play: playing /mnt/mmc/.lma/stream/02 - Take A Step Back.ogg
+2026-10-31 12:51:56 play: playing /mnt/mmc/.lma/stream/03 - Saint Stephen (end).mp3
+2026-10-31 12:52:09 stopped from the Q2
