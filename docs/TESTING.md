@@ -49,3 +49,33 @@ Steps:
 
 Once the app exists: same sideload steps, one feature per round, with `log.txt` coming back each
 time.
+
+## Round 2: v0.1 (2026-10-31)
+
+Install: Q2 fully off, copy `dist/card/.lma/` over the card's `.lma/` (or unzip
+`dist/q2-lma-v0.1-*.zip` at the root and copy `dist/card/.lma/my-artists.txt` beside it). The
+probe's leftovers (`.lma/stream/`, `.lma/probe.txt`) are unused; delete them or not.
+
+The three things only the Q2 can answer come first.
+
+1. **Album art in Ogg files.** Streaming → Live Music Archive → My Artists → Grateful Dead → 1977
+   → 05-08 → Play Show. On Now Playing: is there art (the llama; this show has none of its own),
+   and do the title, artist and album show?
+2. **Gaps between songs.** Same show, press song 16, Saint Stephen: it runs into 17, Not Fade
+   Away, then into 18, Saint Stephen again. Is there a gap or click at each change? Then Settings →
+   Prefer: MP3, press song 16 again (it downloads the MP3s), and compare the gaps and the art.
+3. **Start time.** How long from pressing Play Show to sound, the first time, and again later
+   (from the cache, it should be at once).
+
+Then, as time allows:
+
+4. Next, Previous, pause for a few minutes, screen off: does playback carry on through the show?
+5. More Versions on 05-08: pick another recording, Back, Play Show: does it play that one?
+6. Shuffle a Show from the menu, and from an artist's page.
+7. Hold Play/Pause on an artist in All Artists or Top Artists: added to My Artists? Again:
+   removed?
+8. Search Artists for a band, and browse a letter in All Artists.
+9. Watch for "didn't answer" or "isn't running" anywhere (seen intermittently on the PC test
+   harness only, believed to be Windows-specific).
+
+Afterwards: power fully off and send `.lma/log.txt`.
