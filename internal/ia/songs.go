@@ -16,6 +16,10 @@ type Song struct {
 	Track   int
 	Seconds int
 	Size    int64
+	// The same song in the other format, "" when the recording has only one: tried when File
+	// can't be had.
+	AltFile, AltExt string
+	AltSize         int64
 }
 
 // Formats a song may stream in, by preference name.
@@ -41,7 +45,7 @@ func rank(format, prefer string) int {
 func Songs(files []File, prefer string) []Song {
 	type group struct {
 		key            string
-		best           File
+		best, alt      File // alt: the best file in the other extension
 		title, track   string
 		length         string
 		bestRank, have int
@@ -66,6 +70,7 @@ func Songs(files []File, prefer string) []Song {
 		if r := rank(f.Format, prefer); r < g.bestRank {
 			g.best, g.bestRank = f, r
 		}
+		g.have++
 		if f.Title != "" && g.title == "" {
 			g.title = string(f.Title)
 		}
@@ -79,10 +84,26 @@ func Songs(files []File, prefer string) []Song {
 	songs := make([]Song, 0, len(keys))
 	tracks := map[int]bool{}
 	numbered := true
+	for _, f := range files { // each song's best file in the extension its chosen one isn't
+		key := f.Original
+		if key == "" || f.Source == "original" {
+			key = f.Name
+		}
+		g, ext := groups[key], streamable[f.Format]
+		if g == nil || ext == "" || ext == streamable[g.best.Format] {
+			continue
+		}
+		if g.alt.Name == "" || rank(f.Format, prefer) < rank(g.alt.Format, prefer) {
+			g.alt = f
+		}
+	}
 	for _, k := range keys {
 		g := groups[k]
 		s := Song{File: g.best.Name, Ext: streamable[g.best.Format], Title: g.title, Size: int64(g.best.Size),
 			Seconds: seconds(g.length)}
+		if g.alt.Name != "" {
+			s.AltFile, s.AltExt, s.AltSize = g.alt.Name, streamable[g.alt.Format], int64(g.alt.Size)
+		}
 		if s.Title == "" {
 			s.Title = strings.TrimSuffix(path.Base(k), path.Ext(k))
 		}

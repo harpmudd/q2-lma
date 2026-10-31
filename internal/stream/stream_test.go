@@ -92,7 +92,9 @@ func engine(t *testing.T, fetch Fetcher) (*Engine, *firmware) {
 		Cap: func() int64 { return 1 << 30 }, Free: func() int64 { return 100 << 30 },
 		Log: t.Logf, Poll: 5 * time.Millisecond, Gap: 0,
 		Backoff: []time.Duration{time.Millisecond, time.Millisecond, time.Millisecond},
-		NetWait: 10 * time.Millisecond, Idle: time.Second,
+		Transient: []time.Duration{5 * time.Millisecond, 5 * time.Millisecond, 5 * time.Millisecond,
+			5 * time.Millisecond, 5 * time.Millisecond, 5 * time.Millisecond, 5 * time.Millisecond},
+		Idle: time.Second,
 	}
 	return e, &firmware{play: e.PlayFile, playing: e.PlayingFile, songFor: 15 * time.Millisecond}
 }
@@ -155,6 +157,41 @@ func TestNetworkErrorsDontUseTries(t *testing.T) {
 	defer fw.mu.Unlock()
 	if len(fw.played) != 2 || fw.played[0] != "01 - Song 1.ogg" {
 		t.Errorf("played %v after %d calls", fw.played, calls.Load())
+	}
+}
+
+func TestServerErrorsWaitThenTheOtherFormat(t *testing.T) {
+	// song 1 answers 500 five times then plays; song 2's Ogg never comes, its MP3 does
+	var calls sync.Map
+	e, fw := engine(t, func(ctx context.Context, s *Session, i int, dst string) error {
+		sg := s.Songs[i]
+		n, _ := calls.LoadOrStore(sg.File, new(atomic.Int32))
+		k := n.(*atomic.Int32).Add(1)
+		switch {
+		case sg.File == "t01.ogg" && k <= 5:
+			return &ia.HTTPError{Code: 500}
+		case sg.File == "t02.ogg":
+			return &ia.HTTPError{Code: 500}
+		}
+		return write(dst)
+	})
+	stop := make(chan struct{})
+	defer close(stop)
+	go fw.run(t, stop)
+	ss := songs(3)
+	ss[1].AltFile, ss[1].AltExt = "t02.mp3", ".mp3"
+	e.Start(Session{ID: "flaky.test", Songs: ss})
+	for deadline := time.Now().Add(5 * time.Second); e.Active() && time.Now().Before(deadline); {
+		time.Sleep(10 * time.Millisecond)
+	}
+	fw.mu.Lock()
+	got := strings.Join(fw.played, ",")
+	fw.mu.Unlock()
+	if want := "01 - Song 1.ogg,02 - Song 2.mp3,03 - Song 3.ogg"; got != want {
+		t.Errorf("played %s\nwant   %s", got, want)
+	}
+	if _, _, err := e.Status(); err != nil {
+		t.Errorf("an error left: %v", err)
 	}
 }
 

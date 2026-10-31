@@ -175,8 +175,19 @@ func TestBrowseToPlay(t *testing.T) {
 	a.change(func(s *settings) { delete(s.Picks, "GratefulDead 1977-05-08") })
 
 	// Play Show: the queue file and .play, then the first song lands tagged in the cache
-	if r := ask(t, a, "play", play.Context); r.Message != "Starting…" {
+	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Loading Minglewood Blues") {
 		t.Errorf("play %q", r.Message)
+	}
+	// pressed again while it starts: left alone
+	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Already started") {
+		t.Errorf("second press %q", r.Message)
+	}
+	// the show page has a live first row while its recording streams
+	for end := time.Now().Add(3 * time.Second); a.eng.Current() == "" && time.Now().Before(end); {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if r := ask(t, a, "show", cornell.Context); r.Message != q2spot.Refresh || r.Rows[0].URI == "play" {
+		t.Errorf("show while streaming: message %q, first row %+v", r.Message, r.Rows[0])
 	}
 	var first string
 	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); time.Sleep(20 * time.Millisecond) {

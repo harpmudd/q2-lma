@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.2]
+
+- Pressing Play Show again while it starts no longer starts the download over.
+- The show's page shows the song downloading, with a bar, and what plays; the toast says how long
+  the first song should take.
+- archive.org's passing errors (500s, timeouts) are waited out instead of skipping the song; a song
+  that still won't come is tried in its other format (MP3 for Ogg) before it is skipped.
+
 ## [0.1]
 
 First version, for testing on a Q2.

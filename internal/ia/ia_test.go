@@ -93,6 +93,9 @@ func TestSongsPairsOggWithMP3Titles(t *testing.T) {
 	if last.Track != 20 || !strings.Contains(last.File, "d3t07") || last.Title != "Saturday Night" {
 		t.Errorf("last: %+v", last)
 	}
+	if first.AltExt != ".mp3" || !strings.HasSuffix(first.AltFile, "d1t01.mp3") || first.AltSize == 0 {
+		t.Errorf("first's other format: %+v", first)
+	}
 	mp3 := Songs(files(t, "gd77-05-08.sbd.hicks.4982.sbeok.shnf"), "mp3")
 	if mp3[0].Ext != ".mp3" || mp3[0].Title != "Minglewood Blues" {
 		t.Errorf("mp3: %+v", mp3[0])
@@ -101,7 +104,7 @@ func TestSongsPairsOggWithMP3Titles(t *testing.T) {
 
 func TestSongsMP3Only(t *testing.T) {
 	songs := Songs(files(t, "wsp2026-06-26"), "ogg") // no Ogg: MP3
-	if len(songs) != 22 || songs[0].Ext != ".mp3" || songs[0].Title != "One-Arm Steve >" {
+	if len(songs) != 22 || songs[0].Ext != ".mp3" || songs[0].Title != "One-Arm Steve >" || songs[0].AltFile != "" {
 		t.Fatalf("%d songs, first %+v", len(songs), songs[0])
 	}
 	if Art(files(t, "wsp2026-06-26")) != "" {

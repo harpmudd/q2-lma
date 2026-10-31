@@ -53,11 +53,11 @@ type Engine struct {
 	Cap         func() int64 // the cache's size limit
 	Free        func() int64 // bytes free on the card
 	Log         func(format string, a ...any)
-	Poll        time.Duration // how often .playing is read; 1 s
-	Gap         time.Duration // the least time between two queue writes: FAT keeps mtimes in 2 s
-	Backoff     []time.Duration
-	NetWait     time.Duration // a network failure waits this long, without using up a try
-	Idle        time.Duration // a session is over when nothing new has played for this long past a song's end
+	Poll        time.Duration   // how often .playing is read; 1 s
+	Gap         time.Duration   // the least time between two queue writes: FAT keeps mtimes in 2 s
+	Backoff     []time.Duration // the waits between a song's tries
+	Transient   []time.Duration // the waits after passing failures (transient), which use no try
+	Idle        time.Duration   // a session is over when nothing new has played for this long past a song's end
 
 	mu     sync.Mutex
 	cancel context.CancelFunc
@@ -119,18 +119,21 @@ func (e *Engine) Busy() bool {
 }
 
 // Current is the recording the session plays, "" when none runs.
-func (e *Engine) Current() string {
+func (e *Engine) Current() string { id, _ := e.Playing(); return id }
+
+// Playing is the running session's recording and the song it started from; "" when none runs.
+func (e *Engine) Playing() (id string, from int) {
 	e.mu.Lock()
 	r := e.cur
 	e.mu.Unlock()
 	if r == nil {
-		return ""
+		return "", 0
 	}
 	select {
 	case <-r.done:
-		return ""
+		return "", 0
 	default:
-		return r.s.ID
+		return r.s.ID, r.s.From
 	}
 }
 
@@ -196,7 +199,8 @@ func (e *Engine) Start(s Session) error {
 	touch(dir) // most recently played: evicted last
 	stale, _ := os.ReadFile(e.PlayingFile)
 	r := &run{e: e, s: s, seq: time.Now().UnixNano(), stale: strings.TrimSpace(string(stale)), last: s.From,
-		done: make(chan struct{}), tries: make([]int, len(s.Songs)), next: make([]time.Time, len(s.Songs))}
+		done: make(chan struct{}), tries: make([]int, len(s.Songs)), trans: make([]int, len(s.Songs)),
+		next: make([]time.Time, len(s.Songs))}
 	for _, sg := range s.Songs {
 		r.paths = append(r.paths, SongPath(e.Cache, s.ID, sg))
 	}
@@ -248,6 +252,7 @@ type run struct {
 	announced bool
 	wrote     time.Time
 	tries     []int
+	trans     []int // passing failures waited out, per song
 	next      []time.Time
 	fetching  atomic.Bool
 	state     atomic.Value // string
@@ -318,10 +323,16 @@ func (r *run) current() (int, string) {
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }
 
-// netErr is a failure of the connection rather than of the song: it doesn't use up a try.
-func netErr(err error) bool {
+// transient is a failure of the connection or of archive.org's servers rather than of the song: a
+// dropped connection, a timeout, a 429, or a 5xx, which archive.org's storage nodes answer for a
+// moment and then serve the file (seen on the Q2: 500s that a retry seconds later got past).
+func transient(err error) bool {
 	var ne net.Error
 	var th *ia.ErrThrottled
+	var he *ia.HTTPError
+	if errors.As(err, &he) {
+		return he.Code >= 500 || he.Code == 429
+	}
 	return errors.As(err, &ne) || errors.As(err, &th) || errors.Is(err, context.DeadlineExceeded) ||
 		strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "unexpected EOF")
 }
@@ -398,16 +409,32 @@ func (r *run) fetchOne(ctx context.Context, i int) bool {
 	if ctx.Err() != nil {
 		return false
 	}
-	if netErr(err) {
-		e.logf("stream %q: network: %v", sg.Title, err)
-		r.set("Waiting for the network: %s", sg.Title)
-		r.next[i] = time.Now().Add(e.NetWait)
+	// A passing failure waits and tries again without using up a try, up to len(Transient) times.
+	if transient(err) && r.trans[i] < len(e.Transient) {
+		r.trans[i]++
+		e.logf("stream %q: waiting %s: %v", sg.Title, e.Transient[r.trans[i]-1], err)
+		r.set("Waiting for archive.org: %s", sg.Title)
+		r.next[i] = time.Now().Add(e.Transient[r.trans[i]-1])
 		return false
 	}
 	r.tries[i]++
 	e.logf("stream %q try %d: %v", sg.Title, r.tries[i], err)
 	if r.tries[i] < len(e.Backoff) {
 		r.next[i] = time.Now().Add(e.Backoff[r.tries[i]-1])
+		return false
+	}
+	// Out of tries: the same song in the other format, once. The firmware waits on this entry
+	// (it is the current song or after it), so its line may change.
+	if sg.AltFile != "" && (r.queue == "" || i >= r.last) {
+		alt := sg
+		alt.File, alt.Ext, alt.Size, alt.AltFile = sg.AltFile, sg.AltExt, sg.AltSize, ""
+		r.s.Songs[i], r.paths[i], r.tries[i], r.trans[i] = alt, SongPath(e.Cache, r.s.ID, alt), 0, 0
+		e.logf("stream %q: trying %s instead", sg.Title, alt.File)
+		if r.queue != "" {
+			if werr := r.writeQueue(); werr != nil {
+				e.logf("stream: queue: %v", werr)
+			}
+		}
 		return false
 	}
 	if r.queue == "" || i < r.last {
@@ -418,6 +445,7 @@ func (r *run) fetchOne(ctx context.Context, i int) bool {
 	r.s.Songs = slices.Delete(r.s.Songs, i, i+1)
 	r.paths = slices.Delete(r.paths, i, i+1)
 	r.tries = slices.Delete(r.tries, i, i+1)
+	r.trans = slices.Delete(r.trans, i, i+1)
 	r.next = slices.Delete(r.next, i, i+1)
 	if werr := r.writeQueue(); werr != nil {
 		e.logf("stream: queue: %v", werr)

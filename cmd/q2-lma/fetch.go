@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 
+	"q2-lma/internal/ia"
 	"q2-lma/internal/stream"
 	"q2-lma/internal/tag"
 )
@@ -25,9 +27,25 @@ func (a *app) get(ctx context.Context, u string) (*http.Response, error) {
 	}
 	if resp.StatusCode/100 != 2 {
 		resp.Body.Close()
-		return nil, fmt.Errorf("archive.org answered %s", resp.Status)
+		return nil, &ia.HTTPError{Code: resp.StatusCode} // the stream tells a passing 5xx from a 404
 	}
 	return resp, nil
+}
+
+// progress is the download running now, for the show page's bar and the toast's estimate.
+type progress struct {
+	id          string // the recording
+	index       int
+	title       string
+	done, total int64
+	active      bool
+	rate        float64 // bytes a second, from the downloads so far
+}
+
+func (a *app) progress() progress {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.prog
 }
 
 // cover is the recording's cover as a JPEG: its own picture when it has one that reads, else the
@@ -57,13 +75,17 @@ func (a *app) cover(ctx context.Context, s *stream.Session) []byte {
 }
 
 type counter struct {
-	r io.Reader
-	n int64
+	r    io.Reader
+	n    int64
+	tick func(int64)
 }
 
 func (c *counter) Read(p []byte) (int, error) {
 	n, err := c.r.Read(p)
 	c.n += int64(n)
+	if c.tick != nil {
+		c.tick(c.n)
+	}
 	return n, err
 }
 
@@ -84,7 +106,24 @@ func (a *app) fetchSong(ctx context.Context, s *stream.Session, i int, dst strin
 	if err != nil {
 		return err
 	}
-	in := &counter{r: resp.Body}
+	total := resp.ContentLength
+	if total <= 0 {
+		total = sg.Size
+	}
+	start := time.Now()
+	a.mu.Lock()
+	a.prog = progress{id: s.ID, index: i, title: sg.Title, total: total, active: true, rate: a.prog.rate}
+	a.mu.Unlock()
+	defer func() {
+		a.mu.Lock()
+		a.prog.active = false
+		a.mu.Unlock()
+	}()
+	in := &counter{r: resp.Body, tick: func(n int64) {
+		a.mu.Lock()
+		a.prog.done = n
+		a.mu.Unlock()
+	}}
 	_, err = tag.Write(out, in, sg.Ext, m)
 	if err == nil && resp.ContentLength >= 0 && in.n != resp.ContentLength {
 		err = fmt.Errorf("got %d of %d bytes", in.n, resp.ContentLength)
@@ -103,6 +142,11 @@ func (a *app) fetchSong(ctx context.Context, s *stream.Session, i int, dst strin
 		return err
 	}
 	a.forgetSize()
-	a.log.Printf("fetched %s/%s (%d KB)", s.ID, sg.File, in.n>>10)
+	if secs := time.Since(start).Seconds(); secs > 0.5 && in.n > 1<<20 {
+		a.mu.Lock()
+		a.prog.rate = float64(in.n) / secs
+		a.mu.Unlock()
+	}
+	a.log.Printf("fetched %s/%s (%d KB in %.1f s)", s.ID, sg.File, in.n>>10, time.Since(start).Seconds())
 	return nil
 }

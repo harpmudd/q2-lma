@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	version   = "q2-v0.1"
-	userAgent = "q2-lma/0.1 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
+	version   = "q2-v0.2"
+	userAgent = "q2-lma/0.2 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
 	idleAfter = 15 * time.Minute // exit 0 after this long with no request, stream or load
 	answerIn  = 8 * time.Second  // a reply within this; the firmware gives up at 15 s
 )
@@ -52,6 +52,9 @@ type app struct {
 	sizeAt    time.Time // the cache's size, measured at most every 30 s
 	size      int64
 	names     sync.Map // artist identifier → name, from the lists sent
+	prog      progress // the download running now
+	failedRec string   // the recording the last failed play was for
+	starting  string   // "<recording> <song>" while a play is being set up
 }
 
 // settings is .lma/settings.json. It isn't in the release zip, so updates keep it.
@@ -124,8 +127,9 @@ func newApp(dir, card, tmp, base string, hc *http.Client) *app {
 		Free: func() int64 { return a.free() },
 		Log:  a.log.Printf,
 		Poll: time.Second, Gap: 2100 * time.Millisecond, // FAT keeps mtimes in 2 s
-		Backoff: []time.Duration{2 * time.Second, 8 * time.Second, 30 * time.Second},
-		NetWait: 15 * time.Second, Idle: 10 * time.Minute,
+		Backoff:   []time.Duration{2 * time.Second, 8 * time.Second, 30 * time.Second},
+		Transient: []time.Duration{2 * time.Second, 4 * time.Second, 8 * time.Second, 15 * time.Second, 30 * time.Second},
+		Idle:      10 * time.Minute,
 	}
 	return a
 }

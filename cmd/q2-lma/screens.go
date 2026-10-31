@@ -507,7 +507,8 @@ func (a *app) show(ctx, cursor string) q2spot.Reply {
 	if r != nil {
 		return *r
 	}
-	var rows []q2spot.Row
+	status, live := a.showStatus(rec.ID)
+	rows := status
 	base := f[0] + " " + f[1] + " " + rec.ID
 	if len(songs) == 0 {
 		rows = append(rows, info("No MP3 or Ogg files in this recording", "Choose another in More Versions"))
@@ -527,6 +528,11 @@ func (a *app) show(ctx, cursor string) q2spot.Reply {
 			sub = join(sub, "On the Q2")
 		}
 		rows = append(rows, act("play", fmt.Sprintf("%s %d", base, i), fmt.Sprintf("%02d %s", sg.Track, sg.Title), sub))
+	}
+	// While it streams the page refreshes, so its bar moves; the firmware never pages a refreshing
+	// list, so a show too long for one page gives up the refresh rather than its songs.
+	if live && len(rows) <= q2spot.MaxRows && cursor == "" {
+		return q2spot.Reply{Message: q2spot.Refresh, Rows: rows}
 	}
 	return page(rows, cursor)
 }
@@ -604,7 +610,45 @@ func (a *app) play(ctx string) q2spot.Reply {
 	if err != nil {
 		return q2spot.Fail(q2spot.Bad, "Bad request")
 	}
+	// A second press of what is starting or playing leaves it be: starting again would throw away
+	// the download under way (seen on the Q2: a show pressed three times in 20 s, never playing).
+	key := f[2] + " " + f[3]
+	a.mu.Lock()
+	starting := a.starting == key
+	if !starting {
+		a.starting = key
+	}
+	a.mu.Unlock()
+	if id, from := a.eng.Playing(); starting || id == f[2] && from == n {
+		return q2spot.Reply{Message: "Already started: it plays once its first song is on the Q2"}
+	}
+	msg := "Loading…"
+	c, cancel := context.WithTimeout(context.Background(), answerIn/2)
+	files, ferr := a.ia.Files(c, f[2]) // cached by the show page
+	cancel()
+	if songs := ia.Songs(files, a.settings().Prefer); ferr == nil && n >= 0 && n < len(songs) {
+		sg := songs[n]
+		if _, err := os.Stat(stream.SongPath(a.eng.Cache, f[2], sg)); err == nil {
+			msg = "Playing " + sg.Title
+		} else {
+			rate := a.progress().rate
+			if rate <= 0 {
+				rate = 1.5e6 // measured on the Q2 over home Wi-Fi
+			}
+			msg = fmt.Sprintf("Loading %s: %s, about %d s", sg.Title, gb(sg.Size), int(float64(sg.Size)/rate)+2)
+		}
+	}
+	a.mu.Lock()
+	a.failedRec = ""
+	a.mu.Unlock()
 	go func() {
+		defer func() {
+			a.mu.Lock()
+			if a.starting == key {
+				a.starting = ""
+			}
+			a.mu.Unlock()
+		}()
 		c, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 		s, err := a.session(c, f[0], f[1], f[2], n)
@@ -613,9 +657,48 @@ func (a *app) play(ctx string) q2spot.Reply {
 		}
 		if err != nil {
 			a.setProblem("Couldn't play %s: %v", f[1], err)
+			a.mu.Lock()
+			a.failedRec = f[2]
+			a.mu.Unlock()
 		}
 	}()
-	return q2spot.Reply{Message: "Starting…"}
+	return q2spot.Reply{Message: msg}
+}
+
+// showStatus is the show page's live row while its recording streams: the song downloading (a
+// progress bar where the firmware has them), else what the stream does, and any failure; live
+// when the page should refresh.
+func (a *app) showStatus(rec string) (rows []q2spot.Row, live bool) {
+	a.mu.Lock()
+	failed, problem := a.failedRec == rec, a.problem
+	a.mu.Unlock()
+	if failed {
+		return []q2spot.Row{info(problem, "Press Play Show to try again")}, false
+	}
+	if a.eng.Current() != rec {
+		return nil, false
+	}
+	p := a.progress()
+	_, line, serr := a.eng.Status()
+	switch {
+	case p.active && p.id == rec:
+		pml := 0
+		if p.total > 0 {
+			pml = int(p.done * 1000 / p.total)
+		}
+		title, sub := "Loading "+p.title, gb(p.done)+" of "+gb(p.total)
+		if a.capsHas("progress") {
+			rows = append(rows, q2spot.Row{Kind: q2spot.KindProgress, Title: title, Subtitle: sub, Position: strconv.Itoa(pml)})
+		} else {
+			rows = append(rows, info(title, sub))
+		}
+	case line != "":
+		rows = append(rows, info(line, ""))
+	}
+	if serr != nil && time.Since(serr.At) < 10*time.Minute {
+		rows = append(rows, info(serr.Error(), ""))
+	}
+	return rows, true
 }
 
 // shuffle plays a random show from the start: from one artist, else from My Artists, else from Top

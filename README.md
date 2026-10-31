@@ -6,7 +6,8 @@ concert recordings and streams them over Wi-Fi, with nothing to set up.
 
 ## Install
 
-Needs Q2 Pod 1.5.9 or later.
+Needs Q2 Pod 1.5.9 or later. Q2 Pod 1.5.9 shows a streamed song by its file name and "Unknown
+artist"; 1.6.0 reads the title, artist and album the app writes into each song.
 
 With the Q2 **powered off** (not asleep), unzip the release's `q2-lma-*.zip` at the root of the
 microSD card, so that `.lma/` sits at the top of the card. Put the card back, power on, join Wi-Fi,
