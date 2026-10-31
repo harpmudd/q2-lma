@@ -29,7 +29,7 @@ Band, Dave Matthews Band, Umphrey's McGee, Gov't Mule, Hot Tuna, Medeski Martin 
 [I] These bands asked archive.org to remove or never host their shows; the cause isn't checked
 here, only the absence.
 
-## Verified alternatives
+## Verified alternatives (all 14 added, 2026-10-31)
 
 | Artist | Collection | Shows |
 |---|---|---|
@@ -53,3 +53,9 @@ here, only the absence.
 Older items carry VBR MP3 and Ogg Vorbis derivatives; newer ones may carry only VBR MP3 (for
 example `wsp2026-06-26`: Flac and VBR MP3). The app prefers Ogg when present (half the size, so
 faster to start), else VBR MP3.
+
+## Final v0 list: 27 artists
+
+The 13 above that are on the archive, plus all 14 alternatives. Tedeschi Trucks Band and Derek
+Trucks Band are one entry, as the user listed them, browsing both collections (open question, the
+default until the user says otherwise).
