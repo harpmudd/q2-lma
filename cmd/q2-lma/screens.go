@@ -242,6 +242,7 @@ func (a *app) details() q2spot.Reply {
 
 // artistRow opens an artist; Play/Pause held on it adds or removes it from My Artists.
 func (a *app) artistRow(x ia.Artist) q2spot.Row {
+	a.names.Store(x.ID, string(x.Name)) // what a hold on this row adds to My Artists
 	sub := ""
 	if a.mine.Has(x.ID) {
 		sub = "In My Artists"
@@ -332,8 +333,12 @@ func (a *app) search(term, cursor string) q2spot.Reply {
 	return a.artistList(as, cursor, "Nothing found")
 }
 
-// name is an artist's name: archive.org's, else My Artists', else its identifier.
+// name is an artist's name: as a list sent it, else archive.org's, else My Artists', else its
+// identifier.
 func (a *app) name(ctx context.Context, id string) string {
+	if n, ok := a.names.Load(id); ok && n.(string) != id {
+		return n.(string)
+	}
 	if m, err := a.ia.Names(ctx, []string{id}); err == nil {
 		if x, ok := m[id]; ok {
 			return string(x.Name)
@@ -352,9 +357,21 @@ func (a *app) fav(id string) q2spot.Reply {
 	if !ia.ValidID(id) {
 		return q2spot.Fail(q2spot.Bad, "Bad request")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), answerIn/2)
-	defer cancel()
-	added, err := a.mine.Toggle(id, a.name(ctx, id))
+	name, _ := a.names.Load(id) // the row held was in a list just sent, so its name is known
+	n, _ := name.(string)
+	if n == "" {
+		n = id
+	}
+	added, err := a.mine.Toggle(id, n)
+	if added && n == id { // archive.org's name for the file, behind the reply
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			if real := a.name(ctx, id); real != id {
+				a.mine.Name(id, real)
+			}
+		}()
+	}
 	switch {
 	case err != nil:
 		a.log.Printf("my artists: %v", err)

@@ -18,10 +18,20 @@ import (
 func main() {
 	sock := flag.String("sock", "/tmp/q2-lma.browse.sock", "the app's browse socket")
 	watch := flag.Duration("watch", 0, "ask again this often (0: once)")
+	raw := flag.Bool("raw", false, "print the reply's bytes as they came, unparsed")
 	flag.Parse()
 	if flag.NArg() < 1 {
 		fmt.Fprintln(os.Stderr, "usage: q2ctl [-sock PATH] [-watch DUR] OP [ARG…]")
 		os.Exit(2)
+	}
+	if *raw {
+		b, err := q2spot.AskRaw(*sock, "1", flag.Arg(0), flag.Args()[1:]...)
+		fmt.Printf("%q\n", b)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "q2ctl:", err)
+			os.Exit(1)
+		}
+		return
 	}
 	for id := 1; ; id++ {
 		r, err := q2spot.Ask(*sock, strconv.Itoa(id), flag.Arg(0), flag.Args()[1:]...)

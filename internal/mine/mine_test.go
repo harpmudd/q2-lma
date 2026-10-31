@@ -32,6 +32,18 @@ func TestToggleKeepsCommentsAndOrder(t *testing.T) {
 	}
 }
 
+func TestName(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "my-artists.txt")
+	os.WriteFile(p, []byte("# mine\nmoe\nGratefulDead\tGrateful Dead\n"), 0o644)
+	l := Load(p)
+	if err := l.Name("moe", "moe."); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(p); string(b) != "# mine\nmoe\tmoe.\nGratefulDead\tGrateful Dead\n" {
+		t.Errorf("%q", b)
+	}
+}
+
 func TestBOM(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "my-artists.txt")
 	os.WriteFile(p, []byte("\xef\xbb\xbfGratefulDead\tGrateful Dead\n"), 0o644) // Notepad's UTF-8

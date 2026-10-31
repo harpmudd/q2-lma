@@ -134,6 +134,10 @@ func TestBrowseToPlay(t *testing.T) {
 	if r := ask(t, a, "mine"); r.Rows[0].Title != "Grateful Dead" {
 		t.Errorf("My Artists: %+v", r.Rows)
 	}
+	mineFile, _ := os.ReadFile(filepath.Join(a.dir, "my-artists.txt"))
+	if !strings.HasSuffix(string(mineFile), "GratefulDead\tGrateful Dead\n") {
+		t.Errorf("my-artists.txt:\n%s", mineFile)
+	}
 
 	artist := ask(t, a, "artist", "GratefulDead")
 	y77 := find(t, artist, "1977")

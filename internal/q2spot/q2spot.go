@@ -317,14 +317,27 @@ func firstField(b []byte) string {
 // Ask sends one request to the socket at path and returns its reply, as the firmware does: write,
 // shut the write side, read to EOF, within Timeout.
 func Ask(path, id, op string, args ...string) (Reply, error) {
-	c, err := net.Dial("unix", path)
+	buf, err := AskRaw(path, id, op, args...)
 	if err != nil {
 		return Reply{}, err
+	}
+	got, r, err := ParseReply(buf)
+	if err == nil && got != id {
+		err = errors.New("q2spot: reply for request " + got + ", not " + id)
+	}
+	return r, err
+}
+
+// AskRaw is Ask's reply as bytes, unparsed.
+func AskRaw(path, id, op string, args ...string) ([]byte, error) {
+	c, err := net.Dial("unix", path)
+	if err != nil {
+		return nil, err
 	}
 	defer c.Close()
 	c.SetDeadline(time.Now().Add(Timeout))
 	if _, err := c.Write(EncodeRequest(id, op, args...)); err != nil {
-		return Reply{}, err
+		return nil, err
 	}
 	if uc, ok := c.(*net.UnixConn); ok {
 		uc.CloseWrite()
@@ -338,9 +351,5 @@ func Ask(path, id, op string, args ...string) (Reply, error) {
 			break
 		}
 	}
-	got, r, err := ParseReply(buf)
-	if err == nil && got != id {
-		err = errors.New("q2spot: reply for request " + got + ", not " + id)
-	}
-	return r, err
+	return buf, nil
 }

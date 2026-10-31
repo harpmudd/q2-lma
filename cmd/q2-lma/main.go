@@ -51,6 +51,7 @@ type app struct {
 	problemAt time.Time
 	sizeAt    time.Time // the cache's size, measured at most every 30 s
 	size      int64
+	names     sync.Map // artist identifier → name, from the lists sent
 }
 
 // settings is .lma/settings.json. It isn't in the release zip, so updates keep it.

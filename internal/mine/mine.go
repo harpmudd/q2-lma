@@ -74,6 +74,28 @@ func (l *List) Has(id string) bool {
 	return false
 }
 
+// Name sets id's name on its line, when id is listed and its name differs, and saves.
+func (l *List) Name(id, name string) error {
+	name = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(strings.TrimSpace(name))
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	changed := false
+	lines := append([]string(nil), l.lines...)
+	for i, line := range lines {
+		if e, ok := parse(line); ok && e.ID == id && e.Name != name && name != "" {
+			lines[i], changed = id+"\t"+name, true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	if err := q2.WriteFile(l.Path, []byte(strings.Join(lines, "\n")+"\n")); err != nil {
+		return err
+	}
+	l.lines = lines
+	return nil
+}
+
 // Toggle adds id (named name) at the end, or removes it, and saves; added reports which.
 func (l *List) Toggle(id, name string) (added bool, err error) {
 	if !ia.ValidID(id) {
