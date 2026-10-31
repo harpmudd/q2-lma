@@ -18,6 +18,7 @@ them).
 | 13 | Yonder Mountain String Band | `YonderMountainStringBand` | 2,199 |
 | 14 | Keller Williams | `KellerWilliams` | 1,413 |
 | 16 | Tedeschi Trucks Band / Derek Trucks Band | `TedeschiTrucksBand`, `DerekTrucksBand` | 1,352 + 1,063 |
+| 9 | Umphrey's McGee | `UmphreysMcGee` (archive spells it "Umphreys McGee") | 3,392 |
 | 18 | Perpetual Groove | `PerpetualGroove` | 920 |
 | 19 | Zen Tricksters | `ZenTricksters` | 108 |
 | 20 | O.A.R. | `OfARevolution` | 682 |
@@ -25,7 +26,9 @@ them).
 ## The user's list: not on the archive
 
 No band collection, and the matching items are tribute bands only: Phish, The Allman Brothers
-Band, Dave Matthews Band, Umphrey's McGee, Gov't Mule, Hot Tuna, Medeski Martin & Wood.
+Band, Dave Matthews Band, Gov't Mule, Hot Tuna, Medeski Martin & Wood (rechecked by title and
+identifier with alternate spellings). Umphrey's McGee was first listed here by mistake: the search
+missed the archive's spelling without the apostrophe.
 [I] These bands asked archive.org to remove or never host their shows; the cause isn't checked
 here, only the absence.
 
@@ -54,8 +57,12 @@ Older items carry VBR MP3 and Ogg Vorbis derivatives; newer ones may carry only 
 example `wsp2026-06-26`: Flac and VBR MP3). The app prefers Ogg when present (half the size, so
 faster to start), else VBR MP3.
 
-## Final v0 list: 27 artists
+## Starting favourites: 28 artists
 
-The 13 above that are on the archive, plus all 14 alternatives. Tedeschi Trucks Band and Derek
+The 14 above that are on the archive, plus all 14 alternatives (28). Tedeschi Trucks Band and Derek
 Trucks Band are one entry, as the user listed them, browsing both collections (open question, the
 default until the user says otherwise).
+
+The archive has 9,333 artist collections under `etree` (2026-10-31), so the app reads artists
+live rather than from a fixed list; these 28 are only the starting "My Artists" (see the design).
+Match on collection identifiers, never on titles: titles vary in spelling and punctuation.
