@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.3]
+
+- Opening a show starts downloading its first song, so Play Show is often instant.
+- A show's own art no longer holds up its first song; it is fetched alongside.
+- Lists don't scroll: every row is fitted to the screen. A year's shows read "May 8 · Barton Hall"
+  over "Ithaca, NY · SBD 4.8★ · 23 versions".
+- The Streaming icon is round: grey in Minimal, as its neighbours, and black in Classic. The app
+  writes the theme's icon when it starts; Q2 Pod shows it once it reloads its images (after a theme
+  change or a restart).
+- Settings → Test Download Speed compares one connection with three at once.
+
 ## [0.2]
 
 - Pressing Play Show again while it starts no longer starts the download over.

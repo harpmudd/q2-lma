@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	version   = "q2-v0.2"
-	userAgent = "q2-lma/0.2 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
+	version   = "q2-v0.3"
+	userAgent = "q2-lma/0.3 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
 	idleAfter = 15 * time.Minute // exit 0 after this long with no request, stream or load
 	answerIn  = 8 * time.Second  // a reply within this; the firmware gives up at 15 s
 )
@@ -43,18 +43,23 @@ type app struct {
 	eng                  *stream.Engine
 	loads                loader
 
-	mu        sync.Mutex
-	set       settings
-	lastReq   time.Time
-	confirmAt time.Time // Clear Cache's first press
-	problem   string    // the last play or shuffle that failed, for the menu
-	problemAt time.Time
-	sizeAt    time.Time // the cache's size, measured at most every 30 s
-	size      int64
-	names     sync.Map // artist identifier → name, from the lists sent
-	prog      progress // the download running now
-	failedRec string   // the recording the last failed play was for
-	starting  string   // "<recording> <song>" while a play is being set up
+	mu           sync.Mutex
+	set          settings
+	lastReq      time.Time
+	confirmAt    time.Time // Clear Cache's first press
+	problem      string    // the last play or shuffle that failed, for the menu
+	problemAt    time.Time
+	sizeAt       time.Time // the cache's size, measured at most every 30 s
+	size         int64
+	names        sync.Map                 // artist identifier → name, from the lists sent
+	prog         progress                 // the download running now
+	failedRec    string                   // the recording the last failed play was for
+	starting     string                   // "<recording> <song>" while a play is being set up
+	calls        map[string]*call         // downloads running, by file (fetchShared)
+	pre          string                   // the file the latest prefetch fetches
+	covers       map[string]chan struct{} // recordings whose art is being or was fetched
+	speedLine    string                   // the last download speed test's result
+	speedRunning bool
 }
 
 // settings is .lma/settings.json. It isn't in the release zip, so updates keep it.
@@ -74,6 +79,7 @@ func main() {
 	card := flag.String("card", "/mnt/mmc", "the card's mount point")
 	tmp := flag.String("tmp", "/tmp", "where the firmware's files and the socket live")
 	base := flag.String("archive", "https://archive.org", "archive.org, or a stand-in for tests")
+	config := flag.String("config", "/mnt/data/config.ini", "Q2 Pod's settings, for its theme")
 	flag.Parse()
 	// About 78 MB is free beside the firmware, with no swap: the GC works harder near this rather
 	// than the kernel's OOM killer picking the app, or the firmware.
@@ -83,6 +89,7 @@ func main() {
 	log.SetOutput(a.log)
 	a.log.Printf("start %s pid %d, caps %q", version, os.Getpid(), q2.ReadCaps(path.Join(*tmp, "q2-addon.caps")).Raw)
 	a.foldCrash()
+	a.themeIcons(*config)
 	a.setHold(false)
 	if time.Now().Before(tlsroots.Floor) { // the clock unset: certificates checked at archive.org's time
 		go func() {
@@ -112,6 +119,7 @@ func main() {
 func newApp(dir, card, tmp, base string, hc *http.Client) *app {
 	os.MkdirAll(dir, 0o755)
 	a := &app{dir: dir, card: card, tmp: tmp, lastReq: time.Now(), hc: hc,
+		calls: map[string]*call{}, covers: map[string]chan struct{}{},
 		log: &q2.Log{Path: path.Join(dir, "log.txt"), Max: 1 << 20}}
 	a.sock = a.tmpFile(".browse.sock")
 	a.ia = &ia.Client{HTTP: hc, Agent: userAgent, Base: base,
@@ -122,7 +130,10 @@ func newApp(dir, card, tmp, base string, hc *http.Client) *app {
 		Cache: path.Join(dir, "cache"), Queue: path.Join(dir, "queue"),
 		PlayFile: a.tmpFile(".play"), PlayingFile: a.tmpFile(".playing"),
 		Playlist: func() bool { return a.capsHas("playlist") },
-		Fetch:    a.fetchSong, Hold: a.setHold,
+		Fetch: func(ctx context.Context, s *stream.Session, i int, dst string) error {
+			return a.fetchShared(ctx, s, i, dst, false)
+		},
+		Hold: a.setHold,
 		Cap:  func() int64 { return int64(a.settings().CacheMB) << 20 },
 		Free: func() int64 { return a.free() },
 		Log:  a.log.Printf,

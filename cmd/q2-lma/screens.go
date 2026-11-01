@@ -116,7 +116,14 @@ func fetch[T any](a *app, key, what string, f func(context.Context) (T, error)) 
 	return v.(T), nil
 }
 
+// device answers a request with every row fitted to its labels (rows.go).
 func (a *app) device(req q2spot.Request) q2spot.Reply {
+	r := a.answer(req)
+	fitRows(&r)
+	return r
+}
+
+func (a *app) answer(req q2spot.Request) q2spot.Reply {
 	a.mu.Lock()
 	a.lastReq = time.Now()
 	a.mu.Unlock()
@@ -152,6 +159,9 @@ func (a *app) device(req q2spot.Request) q2spot.Reply {
 		return a.shuffle(ctx)
 	case "settings":
 		return a.settingsPage()
+	case "speedtest":
+		go a.speedTest()
+		return q2spot.Reply{Message: "Testing download speed: about 10 s"}
 	case "cachesize", "format", "clear":
 		return a.settingAction(req.Op)
 	case "details":
@@ -455,12 +465,7 @@ func (a *app) year(ctx, cursor string) q2spot.Reply {
 	}
 	rows := make([]q2spot.Row, len(shows))
 	for i, s := range shows {
-		best := a.chosen(f[0], s)
-		versions := ""
-		if len(s.Versions) > 1 {
-			versions = plural(len(s.Versions), "version")
-		}
-		rows[i] = list("show", f[0]+" "+s.Date, join(s.Date[5:], ia.Place(best)), join(describe(best), versions))
+		rows[i] = showRow(f[0]+" "+s.Date, s, a.chosen(f[0], s))
 	}
 	return page(rows, cursor)
 }
@@ -506,6 +511,9 @@ func (a *app) show(ctx, cursor string) q2spot.Reply {
 	songs, _, r := a.songs(rec.ID)
 	if r != nil {
 		return *r
+	}
+	if len(songs) > 0 && cursor == "" {
+		a.prefetch(f[0], f[1], rec.ID) // its first song, so Play Show often finds it here
 	}
 	status, live := a.showStatus(rec.ID)
 	rows := status
@@ -641,6 +649,7 @@ func (a *app) play(ctx string) q2spot.Reply {
 	a.mu.Lock()
 	a.failedRec = ""
 	a.mu.Unlock()
+	a.stopPrefetch(f[2]) // another show's: this one's songs first
 	go func() {
 		defer func() {
 			a.mu.Lock()
@@ -796,11 +805,18 @@ func (a *app) settingsPage() q2spot.Reply {
 	if n, _, err := diskSpace(a.card); err == nil {
 		free = "Card: " + gb(int64(n)) + " free"
 	}
+	a.mu.Lock()
+	speed := a.speedLine
+	a.mu.Unlock()
+	if speed == "" {
+		speed = "One connection against three at once"
+	}
 	v := strings.TrimPrefix(version, "q2-v")
 	return q2spot.Reply{Rows: []q2spot.Row{
 		act("cachesize", "", "Cache Size: "+gb(int64(s.CacheMB)<<20), gb(a.cacheSize())+" used"),
 		act("format", "", prefer, why),
 		act("clear", "", "Clear Cache", clear),
+		act("speedtest", "", "Test Download Speed", speed),
 		info(free, ""),
 		info("Version "+v, ""),
 	}}

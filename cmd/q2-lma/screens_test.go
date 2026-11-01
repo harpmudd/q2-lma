@@ -7,14 +7,29 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"q2-lma/internal/fit"
+	"q2-lma/internal/ia"
 	"q2-lma/internal/q2spot"
 )
 
 // fakeArchive answers as archive.org does, from internal/ia's recorded responses; every song is
 // the start of a real Ogg (internal/tag's fixture).
+// downloads counts the fake archive's song downloads, by path.
+var downloads sync.Map
+
+func downloaded(file string) int32 {
+	n, ok := downloads.Load("/download/gd77-05-08.sbd.hicks.4982.sbeok.shnf/" + file)
+	if !ok {
+		return 0
+	}
+	return n.(*atomic.Int32).Load()
+}
+
 func fakeArchive(t *testing.T) *httptest.Server {
 	ia := filepath.Join("..", "..", "internal", "ia", "testdata")
 	ogg := filepath.Join("..", "..", "internal", "tag", "testdata", "head.ogg")
@@ -33,6 +48,8 @@ func fakeArchive(t *testing.T) *httptest.Server {
 			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/metadata/"), "/files")
 			http.ServeFile(w, r, filepath.Join(ia, "files-"+id+".json"))
 		case strings.HasPrefix(r.URL.Path, "/download/") && strings.HasSuffix(r.URL.Path, ".ogg"):
+			n, _ := downloads.LoadOrStore(r.URL.Path, new(atomic.Int32))
+			n.(*atomic.Int32).Add(1)
 			http.ServeFile(w, r, ogg)
 		default:
 			t.Logf("fake archive: no answer for %s", r.URL)
@@ -70,6 +87,13 @@ func ask(t *testing.T, a *app, op string, args ...string) q2spot.Reply {
 			}
 			if !q2spot.ContextFits(row.Context) {
 				t.Errorf("%s: context %q too long", op, row.Context)
+			}
+			w := rowWide
+			if chevron(row) {
+				w = rowChevron
+			}
+			if row.Kind != q2spot.KindProgress && (!fit.Fits(row.Title, titlePx, w) || !fit.Fits(row.Subtitle, subtitlePx, w)) {
+				t.Errorf("%s: row %q / %q would scroll", op, row.Title, row.Subtitle)
 			}
 		}
 		if r.Message == q2spot.Refresh && len(r.Rows) == 1 && r.Rows[0].Title == "Loading…" && try < 50 {
@@ -144,8 +168,8 @@ func TestBrowseToPlay(t *testing.T) {
 	if y77.Subtitle != "2 recordings" || y77.Context != "GratefulDead 1977" {
 		t.Errorf("year row %+v", y77)
 	}
-	cornell := find(t, all(t, a, "year", y77.Context), "05-08")
-	if !strings.HasPrefix(cornell.Subtitle, "SBD · 4.8★") || !strings.Contains(cornell.Subtitle, "23 versions") {
+	cornell := find(t, all(t, a, "year", y77.Context), "May 8 · Barton Hall")
+	if cornell.Subtitle != "Ithaca, NY · SBD 4.8★ · 23 versions" {
 		t.Errorf("Cornell row %+v", cornell)
 	}
 	show := ask(t, a, "show", cornell.Context)
@@ -175,7 +199,7 @@ func TestBrowseToPlay(t *testing.T) {
 	a.change(func(s *settings) { delete(s.Picks, "GratefulDead 1977-05-08") })
 
 	// Play Show: the queue file and .play, then the first song lands tagged in the cache
-	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Loading Minglewood Blues") {
+	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Loading Minglewood Blues") && !strings.HasPrefix(r.Message, "Playing Minglewood Blues") {
 		t.Errorf("play %q", r.Message)
 	}
 	// pressed again while it starts: left alone
@@ -263,5 +287,81 @@ func TestSettings(t *testing.T) {
 	}
 	if r := ask(t, a, "clear"); r.Message != "Cache cleared" {
 		t.Errorf("second clear %q", r.Message)
+	}
+}
+
+// Opening a show fetches its first song; Play Show then finds it, with no second download.
+func TestPrefetchOnShowPage(t *testing.T) {
+	downloads.Clear()
+	a, _ := testApp(t)
+	ctx := "GratefulDead 1977-05-08"
+	show := ask(t, a, "show", ctx)
+	first := "gd77-05-08eaton-d1t01.ogg"
+	var song string
+	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); time.Sleep(20 * time.Millisecond) {
+		if m, _ := filepath.Glob(filepath.Join(a.eng.Cache, "gd77-05-08.sbd.hicks.4982.sbeok.shnf", "01 - *.ogg")); len(m) == 1 {
+			song = m[0]
+			break
+		}
+	}
+	if song == "" {
+		t.Fatal("opening the show fetched nothing")
+	}
+	if got := downloaded("gd77-05-08eaton-d1t02.ogg"); got != 0 {
+		t.Errorf("song 2 fetched before a play: %d", got)
+	}
+	if r := ask(t, a, "play", find(t, show, "Play Show").Context); !strings.HasPrefix(r.Message, "Playing Minglewood Blues") {
+		t.Errorf("play after the prefetch: %q", r.Message)
+	}
+	for end := time.Now().Add(5 * time.Second); downloaded("gd77-05-08eaton-d1t02.ogg") == 0 && time.Now().Before(end); {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if got := downloaded(first); got != 1 {
+		t.Errorf("song 1 downloaded %d times", got)
+	}
+}
+
+func TestThemeIcons(t *testing.T) {
+	a, _ := testApp(t)
+	cfg := filepath.Join(t.TempDir(), "config.ini")
+	for _, c := range []struct{ ini, want string }{
+		{"[PLAYSET]\nARTISTTYPE=1\n[IPOD]\nACCENT=4\nTHEME=1\n", "classic"},
+		{"[IPOD]\r\nTHEME = 0\r\n", "minimal"},
+		{"[IPOD]\nACCENT=2\n", "minimal"},
+		{"garbage", ""},
+	} {
+		os.WriteFile(cfg, []byte(c.ini), 0o644)
+		if got := theme(cfg); got != c.want {
+			t.Errorf("%q: %q, want %q", c.ini, got, c.want)
+		}
+	}
+	os.WriteFile(cfg, []byte("[IPOD]\nTHEME=1\n"), 0o644)
+	a.themeIcons(cfg)
+	want, _ := icons.ReadFile("icons/classic-40.png")
+	if got, _ := os.ReadFile(filepath.Join(a.dir, "icon-40.png")); string(got) != string(want) {
+		t.Error("Classic's icon not written")
+	}
+	before, _ := os.Stat(filepath.Join(a.dir, "icon-40.png"))
+	a.themeIcons(cfg) // unchanged: not written again
+	if after, _ := os.Stat(filepath.Join(a.dir, "icon-40.png")); !after.ModTime().Equal(before.ModTime()) {
+		t.Error("rewritten though unchanged")
+	}
+	os.Remove(cfg)
+	a.themeIcons(cfg) // unreadable: left as they are
+	if got, _ := os.ReadFile(filepath.Join(a.dir, "icon-40.png")); string(got) != string(want) {
+		t.Error("icons changed without a theme")
+	}
+}
+
+func TestShowRowWording(t *testing.T) {
+	s := ia.Show{Date: "2000-04-05", Versions: make([]ia.Recording, 2)}
+	r := showRow("x", s, ia.Recording{ID: "wsp2000-04-05.aud", Venue: "Mitchell Center", Coverage: "Mobile, AL."})
+	if r.Title != "Apr 5 · Mitchell Center" || r.Subtitle != "Mobile, AL · AUD · 2 versions" {
+		t.Errorf("%q / %q", r.Title, r.Subtitle)
+	}
+	r = showRow("x", ia.Show{Date: "1977-02-17", Versions: make([]ia.Recording, 1)},
+		ia.Recording{ID: "gd77.sbd", Venue: "Arista Studios", Coverage: "Unknown, Unknown", Rating: 4})
+	if r.Subtitle != "SBD 4.0★" {
+		t.Errorf("%q", r.Subtitle)
 	}
 }

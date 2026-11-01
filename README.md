@@ -26,11 +26,13 @@ and open **Streaming → Live Music Archive**.
   of that date; pick one and it plays from then on.
 - **Shuffle a Show:** a random show by one of My Artists (by a top artist while My Artists is
   empty). On an artist's page, a random show of theirs.
-- **Settings:** the cache's size (512 MB to 8 GB, 2 GB at first), Ogg or MP3 first, Clear Cache.
+- **Settings:** the cache's size (512 MB to 8 GB, 2 GB at first), Ogg or MP3 first, Clear Cache,
+  and Test Download Speed.
 - **Turn Off Live Music Archive** ends the app; it also ends by itself after 15 minutes unused,
   but never while a show streams.
 
-Songs download whole, a couple ahead of the one playing, and the Q2 plays them from the card, with
+Opening a show starts downloading its first song, so Play Show is often instant. Songs download
+whole, a couple ahead of the one playing, and the Q2 plays them from the card, with
 their titles and the show's cover (or the Live Music Archive's llama). Played shows stay on the
 card until the cache is full, oldest first, so playing one again starts at once.
 
@@ -45,6 +47,7 @@ All on the card under `.lma/`:
 | `cache/` | Played shows, one folder each. |
 | `meta/` | archive.org's answers, kept a day to a month, 20 MB at most. |
 | `log.txt` | What the app did, and why anything failed. |
+| `icon.png`, `icon-40.png` | The Streaming icon, rewritten at each start for Q2 Pod's theme (grey for Minimal, black for Classic). |
 
 ## Limits
 
