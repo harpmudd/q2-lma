@@ -4,36 +4,22 @@
 
 ## [0.4]
 
-- The Minimal icon's llama is black on its grey disc.
+First release: the Internet Archive's Live Music Archive on the Shanling Q2, as a Q2 Pod card app.
+Needs Q2 Pod 1.5.9 or later; 1.6.0 shows each song's title, artist, album and cover in Now
+Playing.
 
-## [0.3]
-
-- Opening a show starts downloading its first song, so Play Show is often instant.
-- A show's own art no longer holds up its first song; it is fetched alongside.
-- Lists don't scroll: every row is fitted to the screen. A year's shows read "May 8 · Barton Hall"
-  over "Ithaca, NY · SBD 4.8★ · 23 versions".
-- The Streaming icon is round: grey in Minimal, as its neighbours, and black in Classic. The app
-  writes the theme's icon when it starts; Q2 Pod shows it once it reloads its images (after a theme
-  change or a restart).
-- Settings → Test Download Speed compares one connection with three at once.
-
-## [0.2]
-
-- Pressing Play Show again while it starts no longer starts the download over.
-- The show's page shows the song downloading, with a bar, and what plays; the toast says how long
-  the first song should take.
-- archive.org's passing errors (500s, timeouts) are waited out instead of skipping the song; a song
-  that still won't come is tried in its other format (MP3 for Ogg) before it is skipped.
-
-## [0.1]
-
-First version, for testing on a Q2.
-
-- Browse the Live Music Archive: My Artists, All Artists A to Z, Top Artists, Search Artists; an
-  artist's years; a year's shows; a show's songs.
-- The best recording of each date plays: soundboard, then matrix, then the rest, best rated first.
-  More Versions picks another.
-- Streams through Q2 Pod's Stream mode, with titles and the show's cover (or the llama logo) in each
-  song, Ogg first and MP3 when a show has no Ogg.
-- Shuffle a Show, from My Artists or one artist.
-- Played shows stay on the card up to a cache size you choose.
+- **Browse:** My Artists (your own list: hold Play/Pause on any artist to add or remove it), All
+  Artists A to Z, Top Artists and Search Artists; an artist's years; a year's shows, each row the
+  date and venue over the city, source and rating; a show's songs.
+- **The best recording plays:** soundboard first, then matrix, then the rest, best rated first.
+  More Versions picks another recording of the date.
+- **Streams through Stream mode:** opening a show starts downloading its first song, so Play Show
+  is usually instant; songs download a couple ahead of the one playing, Ogg first and MP3 where a
+  show has no Ogg, each tagged with its title, artist, album and the show's cover (or the Live
+  Music Archive's llama).
+- **Shuffle a Show** from My Artists, or from one artist.
+- **Played shows stay on the card** up to a cache size you choose (512 MB to 8 GB), oldest first.
+- **Rides out archive.org's hiccups:** passing server errors are waited out, and a song that won't
+  come is tried in its other format before it is skipped.
+- **Fits the Q2:** lists never scroll, and the round Streaming icon follows Q2 Pod's theme: a black
+  llama on grey in Minimal, a white one on black in Classic.
