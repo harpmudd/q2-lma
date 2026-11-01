@@ -77,6 +77,20 @@ writes `target/shanlingq2/q2-lma-vX.Y-<commit>.zip`. `go test ./...` runs everyt
 the firmware's side included (a fake archive.org and a fake Stream mode). See
 [contrib/shanlingq2/README](contrib/shanlingq2/README) and [docs/](docs/).
 
+## Credits
+
+- **Q2 Pod firmware, card-app host, Q2SPOT/1 and Stream mode:** Diamond Bond
+  ([DiamondBond](https://github.com/DiamondBond)), [q2-pod](https://github.com/DiamondBond/q2-pod)
+- **Reference card app ([q2-subsonic](https://github.com/andsuor/q2-subsonic)), whose streaming,
+  launcher and packaging this app follows:** [andsuor](https://github.com/andsuor)
+- **Reference card app ([q2-podcasts](https://github.com/m-d-e-v/q2-podcasts)):**
+  [m-d-e-v](https://github.com/m-d-e-v)
+- **The Live Music Archive:** the [Internet Archive](https://archive.org), and the tapers who
+  record and share these shows
+- **Llama logo:** the [Internet Archive](https://archive.org/details/etree)
+- **CA certificates:** [Mozilla](https://www.mozilla.org), as [curl publishes them](https://curl.se/docs/caextract.html)
+- **Live Music Archive app:** [HarpMudd](https://github.com/harpmudd)
+
 ## License
 
 MIT (see [LICENSE](LICENSE)). `internal/tlsroots/cacert.pem` is Mozilla's CA list as curl

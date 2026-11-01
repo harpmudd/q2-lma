@@ -19,3 +19,11 @@ Archive on your Shanling Q2.
 - **Shuffle a Show** from your artists, or from one artist.
 - **Replays from the card:** played shows stay until the cache size you choose is full.
 - **Made for the Q2:** lists never scroll, and the icon follows your theme.
+
+### Credits
+
+- [Q2 Pod](https://github.com/DiamondBond/q2-pod) by Diamond Bond ([DiamondBond](https://github.com/DiamondBond))
+- [q2-subsonic](https://github.com/andsuor/q2-subsonic) by [andsuor](https://github.com/andsuor) and
+  [q2-podcasts](https://github.com/m-d-e-v/q2-podcasts) by [m-d-e-v](https://github.com/m-d-e-v), the card
+  apps this one follows
+- The [Internet Archive](https://archive.org)'s Live Music Archive, and the tapers who share these shows
