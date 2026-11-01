@@ -8,11 +8,12 @@ on a Shanling Q2 running [Q2 Pod](https://github.com/DiamondBond/q2-pod).
 Requires Q2 Pod 1.6.0 or later.
 
 1. Download `q2-lma-*.zip` from the [latest release](https://github.com/harpmudd/q2-lma/releases/latest).
-2. Power off the Q2 and put its microSD card in a computer.
-3. Unzip the zip at the card's root, so `.lma` sits at the top of the card.
-4. Put the card back, power on, join Wi-Fi, and open **Streaming → Live Music Archive**.
+2. Unzip it at the root of the Q2's card, so `.lma` sits at the top of the card.
+3. Restart the Q2.
 
 ## Use
+
+Open **Streaming → Live Music Archive** (it needs Wi-Fi).
 
 - **My Artists:** your own list. Hold Play/Pause on any artist to add or remove it.
 - **All Artists**, **Top Artists** and **Search Artists** cover the whole archive.
