@@ -1,0 +1,31 @@
+q2-lma probe q2-probe-0.1
+started 2026-10-31T12:51:40Z (system clock), written 2026-10-31T12:51:56Z (corrected)
+
+App:               q2-probe-0.1, go1.27.0 linux/mipsle
+Kernel:            Linux version 5.10.21+ (chenyou@server1-dell) (mips-linux-gnu-gcc (Codescape GNU Tools 2020.06-01 for MIPS MTI Linux) 9.3.0, GNU ld (Codescape GNU Tools 2020.06-01 for MIPS MTI Linux) 2.31.1) #251 SMP PREEMPT Mon Aug 10 18:06:05 CST 2026
+CPU:               xburst2-based, Ingenic XBurst II V0.0  FPU V0.0, 2 cores
+Memory:            total 117884 kB, available 78608 kB
+Card space:        415.6 GB free of 512.6 GB
+Card write:        4.2 MB in 0.2 s = 17.17 MB/s
+Firmware features: playlist progress pages library
+Clock:             2026-10-31 12:51:40 UTC
+DNS:               archive.org: 1 addresses (207.241.224.2) in 11 ms
+Server time:       2026-10-31 12:51:41 UTC, system clock off by -1s
+Search:            421 items for 1977, 50 rows in 0.3 s
+Show files:        20 MP3, 20 Ogg; 30 KB in 0.1 s
+Download speed:    4.2 MB in 2.4 s = 1.72 MB/s from ia600106.us.archive.org
+Memory used:       RSS 10852 kB, Go heap 2.5 MB of 9.9 MB
+
+Play test (m3u mode), pressed 2026-10-31T12:51:43Z
+  01 - Mama Tried.mp3            file ready at 3.2 s, playing never
+  02 - Take A Step Back.ogg      file ready at 4.2 s, playing at 8.1 s
+  03 - Saint Stephen (end).mp3   file ready at 5.7 s, playing at 13.1 s
+  events:
+     0.0 s  wrote .play: 1793451103907763288 /mnt/mmc/.lma/stream/queue-1793451103907763288.m3u
+     3.2 s  01 - Mama Tried.mp3 landed: 4.2 MB in 3.1 s = 1.34 MB/s from dn720303.ca.archive.org
+     4.2 s  02 - Take A Step Back.ogg landed: 1.2 MB in 1.1 s = 1.11 MB/s from dn720303.ca.archive.org
+     5.7 s  03 - Saint Stephen (end).mp3 landed: 2.7 MB in 1.5 s = 1.84 MB/s from dn720303.ca.archive.org
+     5.7 s  all fetched
+     8.1 s  playing 02 - Take A Step Back.ogg
+    13.1 s  playing 03 - Saint Stephen (end).mp3
+  state: Done: all 3 reached; first started at 0.0 s

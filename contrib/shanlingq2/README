@@ -1,0 +1,17 @@
+Shanling Q2 tools
+=================
+
+q2-lma runs from the card's .lma folder as a Q2 Pod card app (q2-pod's patch/addon.c): the
+Internet Archive's Live Music Archive, browsed over Q2SPOT/1 and streamed through Stream mode.
+
+  build.sh     static Go for the Q2 and the card files, in target/shanlingq2/.lma, zipped as
+               target/shanlingq2/q2-lma-vX.Y-SHA.zip (unzip that at the card's root)
+  package.py   checks the binary (static, MIPS32 little-endian, soft-float ABI), sets the nan2008
+               ELF flag the Q2's kernel requires and Go doesn't, checks the launcher's line endings,
+               and writes the ZIP
+  launcher.sh  installed as .lma/run: q2-lma copied to /tmp and run there in a restart loop
+  q2app        installed as .lma/q2app: the card app manifest (name=Live Music Archive)
+  icon.png, icon-40.png
+               Streaming's row icon, 52 px and 40 px, from the Live Music Archive's llama logo
+  test_launcher.py
+               runs launcher.sh on a Linux host with a fake app
