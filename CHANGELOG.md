@@ -22,8 +22,10 @@ Archive on your Shanling Q2.
 
 ### Credits
 
-- [Q2 Pod](https://github.com/DiamondBond/q2-pod) by Diamond Bond ([DiamondBond](https://github.com/DiamondBond))
-- [q2-subsonic](https://github.com/andsuor/q2-subsonic) by [andsuor](https://github.com/andsuor) and
-  [q2-podcasts](https://github.com/m-d-e-v/q2-podcasts) by [m-d-e-v](https://github.com/m-d-e-v), the card
-  apps this one follows
-- The [Internet Archive](https://archive.org)'s Live Music Archive, and the tapers who share these shows
+- **Q2 Pod firmware and its card-app platform:** Diamond Bond ([DiamondBond](https://github.com/DiamondBond)),
+  [q2-pod](https://github.com/DiamondBond/q2-pod)
+- **Streaming, launcher and packaging, after [q2-subsonic](https://github.com/andsuor/q2-subsonic):**
+  [andsuor](https://github.com/andsuor)
+- **Cover art in songs and HTTPS on the Q2, after [q2-podcasts](https://github.com/m-d-e-v/q2-podcasts):**
+  [m-d-e-v](https://github.com/m-d-e-v)
+- **The Live Music Archive:** the [Internet Archive](https://archive.org), and the tapers who share these shows

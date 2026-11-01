@@ -53,16 +53,14 @@ With Go 1.27 and Python 3, `contrib/shanlingq2/build.sh` writes `target/shanling
 
 ## Credits
 
-- **Q2 Pod firmware, card-app host, Q2SPOT/1 and Stream mode:** Diamond Bond
+- **Q2 Pod firmware and its card-app platform:** Diamond Bond
   ([DiamondBond](https://github.com/DiamondBond)), [q2-pod](https://github.com/DiamondBond/q2-pod)
-- **Reference card app ([q2-subsonic](https://github.com/andsuor/q2-subsonic)), whose streaming,
-  launcher and packaging this app follows:** [andsuor](https://github.com/andsuor)
-- **Reference card app ([q2-podcasts](https://github.com/m-d-e-v/q2-podcasts)):**
+- **Streaming, launcher and packaging, after [q2-subsonic](https://github.com/andsuor/q2-subsonic):**
+  [andsuor](https://github.com/andsuor)
+- **Cover art in songs and HTTPS on the Q2, after [q2-podcasts](https://github.com/m-d-e-v/q2-podcasts):**
   [m-d-e-v](https://github.com/m-d-e-v)
-- **The Live Music Archive:** the [Internet Archive](https://archive.org), and the tapers who
-  record and share these shows
-- **Llama logo:** the [Internet Archive](https://archive.org/details/etree)
-- **CA certificates:** [Mozilla](https://www.mozilla.org), as [curl publishes them](https://curl.se/docs/caextract.html)
+- **The Live Music Archive:** the [Internet Archive](https://archive.org), and the tapers who share
+  these shows
 - **Live Music Archive app:** [HarpMudd](https://github.com/harpmudd)
 
 ## License
