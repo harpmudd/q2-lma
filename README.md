@@ -47,7 +47,7 @@ All on the card under `.lma/`:
 | `cache/` | Played shows, one folder each. |
 | `meta/` | archive.org's answers, kept a day to a month, 20 MB at most. |
 | `log.txt` | What the app did, and why anything failed. |
-| `icon.png`, `icon-40.png` | The Streaming icon, rewritten at each start for Q2 Pod's theme (grey for Minimal, black for Classic). |
+| `icon.png`, `icon-40.png` | The Streaming icon, rewritten at each start for Q2 Pod's theme (a black llama on grey for Minimal, a white one on black for Classic). |
 
 ## Limits
 

@@ -1,11 +1,13 @@
 // icons draws the app's Streaming icons from the Live Music Archive logo (assets/lma-logo.png): the
-// llama and its microphone, white, on a round disc with transparent corners, as Q2 Pod's own
-// Streaming icons are (assets/icons/stream_*.png). Two discs:
+// llama and its microphone on a round disc with transparent corners, as Q2 Pod's own Streaming
+// icons are (assets/icons/stream_*.png). Two:
 //
-//	minimal: #8E8E93, the Configuration icon's grey. Minimal greys a card app's icon by its
-//	         luminance (navigation.c, addon_is_icon); every built-in disc has a luminance near
-//	         142, so all of them, this one included, turn the same grey.
-//	classic: black, as the user chose for Classic, which shows an icon's colours as they are.
+//	minimal: a black glyph on #8E8E93, the Configuration icon's grey (the glyph's colour is the
+//	         user's choice). Minimal greys a card app's icon by its luminance (navigation.c,
+//	         addon_is_icon); every built-in disc has a luminance near 142, so all of them, this one
+//	         included, turn the same grey.
+//	classic: a white glyph on black, as the user chose for Classic, which shows an icon's colours
+//	         as they are.
 //
 // One file can't be both (black's luminance is black), so the app writes the one the theme needs
 // (cmd/q2-lma/theme.go). Run from the repository's root:
@@ -27,9 +29,10 @@ const (
 	ss                             = 8                // samples a side per pixel
 )
 
-var discs = map[string]color.NRGBA{
-	"minimal": {0x8e, 0x8e, 0x93, 255},
-	"classic": {0, 0, 0, 255},
+// discs is each icon's disc and glyph colours.
+var discs = map[string][2]color.NRGBA{
+	"minimal": {{0x8e, 0x8e, 0x93, 255}, {0, 0, 0, 255}},
+	"classic": {{0, 0, 0, 255}, {255, 255, 255, 255}},
 }
 
 func main() {
@@ -42,9 +45,9 @@ func main() {
 		log.Fatal(err)
 	}
 	os.MkdirAll("cmd/q2-lma/icons", 0o755)
-	for name, disc := range discs {
+	for name, c := range discs {
 		for _, px := range []int{52, 40} {
-			img := draw(logo, disc, px)
+			img := draw(logo, c[0], c[1], px)
 			write(img, "cmd/q2-lma/icons/"+name+"-"+itoa(px)+".png")
 			if name == "minimal" { // Q2 Pod's default theme: the release ships it
 				out := map[int]string{52: "icon.png", 40: "icon-40.png"}[px]
@@ -70,7 +73,7 @@ func write(img image.Image, p string) {
 
 // draw renders one icon px a side: per pixel, the disc's coverage and the glyph's, each from ss×ss
 // samples.
-func draw(logo image.Image, disc color.NRGBA, px int) *image.NRGBA {
+func draw(logo image.Image, disc, ink color.NRGBA, px int) *image.NRGBA {
 	img := image.NewNRGBA(image.Rect(0, 0, px, px))
 	cw, ch := float64(cropX1-cropX0), float64(cropY1-cropY0)
 	gw := glyph * float64(px)
@@ -101,9 +104,10 @@ func draw(logo image.Image, disc color.NRGBA, px int) *image.NRGBA {
 			if in == 0 {
 				continue
 			}
-			m := white / in
-			mix := func(c uint8) uint8 { return uint8(float64(c)*(1-m) + 255*m + 0.5) }
-			img.SetNRGBA(x, y, color.NRGBA{mix(disc.R), mix(disc.G), mix(disc.B), uint8(in / (ss * ss) * 255)})
+			m := white / in // the logo's white is the glyph
+			mix := func(d, g uint8) uint8 { return uint8(float64(d)*(1-m) + float64(g)*m + 0.5) }
+			img.SetNRGBA(x, y, color.NRGBA{mix(disc.R, ink.R), mix(disc.G, ink.G), mix(disc.B, ink.B),
+				uint8(in / (ss * ss) * 255)})
 		}
 	}
 	return img

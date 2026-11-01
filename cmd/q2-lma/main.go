@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	version   = "q2-v0.3"
-	userAgent = "q2-lma/0.3 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
+	version   = "q2-v0.4"
+	userAgent = "q2-lma/0.4 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
 	idleAfter = 15 * time.Minute // exit 0 after this long with no request, stream or load
 	answerIn  = 8 * time.Second  // a reply within this; the firmware gives up at 15 s
 )

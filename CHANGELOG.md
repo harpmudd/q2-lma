@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.4]
+
+- The Minimal icon's llama is black on its grey disc.
+
 ## [0.3]
 
 - Opening a show starts downloading its first song, so Play Show is often instant.
