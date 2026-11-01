@@ -1,7 +1,8 @@
 name: Release
 # A tag q2-vX.Y must match cmd/q2-lma/main.go's version and have a CHANGELOG.md section. It runs the
-# checks, builds the card files and publishes them as the release's only ZIP, which Q2 Pod's
-# System settings -> App Store installs, with that section as the release notes.
+# checks, builds the card files and publishes them as the release's only ZIP, with that section as
+# the release notes. (Q2 Pod's App Store installs a release's first ZIP, once sources.list lists
+# the app; it doesn't yet.)
 on:
   push:
     tags: ['q2-v*']
