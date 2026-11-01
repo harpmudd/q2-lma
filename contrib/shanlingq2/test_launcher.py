@@ -42,8 +42,10 @@ while :; do sleep 0.1; done
         loop = int(PID.read_text())
         subprocess.run(['sh', str(app / 'run')], check=True)
         assert int(PID.read_text()) == loop, 'a second start replaced the loop'
-        wait(lambda: pathlib.Path('/tmp/q2-lma.crash').exists(), 'the crash file')
-        crash = pathlib.Path('/tmp/q2-lma.crash').read_text()
+        # the launcher creates the file, then writes the run's stderr and its exit code into it
+        crash_file = pathlib.Path('/tmp/q2-lma.crash')
+        wait(lambda: crash_file.exists() and 'exit' in crash_file.read_text(), 'the crash file')
+        crash = crash_file.read_text()
         assert 'boom' in crash and 'exit 3' in crash, crash
         wait(lambda: runs.exists() and len(runs.read_text().splitlines()) == 2, 'the restart', 20)
         assert runs.read_text().splitlines()[1] == f'-dir {app}', runs.read_text()
