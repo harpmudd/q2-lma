@@ -19,9 +19,9 @@ jobs:
           want=$(sed -n 's/^\tversion *= "\(q2-v[0-9.]*\)"$/\1/p' cmd/q2-lma/main.go)
           [ "$want" = "$GITHUB_REF_NAME" ] || { echo "::error::tag $GITHUB_REF_NAME, but main.go's version is $want"; exit 1; }
           v=${GITHUB_REF_NAME#q2-v}
-          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
+          awk -v h="## [$v]" 'index($0, h) == 1 {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md # text, not regex: awks differ on \[
           [ -s notes.md ] || { echo "::error::CHANGELOG.md has no section ## [$v]"; exit 1; }
-          printf '\n---\nInstall or update from Q2 Pod: System settings → App Store, or unzip to the card root with the Q2 powered off.\n' >> notes.md
+          printf '\n---\n**Install:** with the Q2 powered off, unzip the zip below at the root of its card.\n' >> notes.md
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27'
