@@ -114,6 +114,8 @@ func (e *Engine) Status() (active bool, line string, err *Err) {
 // Now is the song a session is on: the one pressed until the firmware's .playing moves on.
 type Now struct {
 	ID, Title    string
+	Artist       string
+	Album, Date  string // the session's: "1977-05-08 Barton Hall, Cornell University", "1977-05-08"
 	Index, Total int
 	Ready        bool   // its file is on the card: it plays
 	State        string // what the session last did
@@ -377,7 +379,8 @@ func (r *run) loop(ctx context.Context) {
 		if now != seen {
 			seen, since = now, time.Now()
 		}
-		r.now.Store(&Now{ID: r.s.ID, Title: r.s.Songs[cur].Title, Index: cur, Total: len(r.paths),
+		r.now.Store(&Now{ID: r.s.ID, Title: r.s.Songs[cur].Title, Artist: r.s.Artist, Album: r.s.Album,
+			Date: r.s.Date, Index: cur, Total: len(r.paths),
 			Ready: exists(r.paths[cur])})
 		want := -1
 		for i := cur; i < len(r.paths) && i <= cur+Ahead; i++ {

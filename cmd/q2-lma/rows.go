@@ -70,6 +70,26 @@ func (a *app) nowRow(rec string) (q2spot.Row, bool) {
 	return wrapped(n.Title, state), true
 }
 
+// nowShowRow is the row under nowRow on the main menu: the artist, then the show's date and venue,
+// the venue shortened to its first part before anything is cut.
+func (a *app) nowShowRow() (q2spot.Row, bool) {
+	n, ok := a.eng.NowPlaying()
+	if !ok {
+		return q2spot.Row{}, false
+	}
+	date := n.Date
+	if t, err := time.Parse("2006-01-02", n.Date); err == nil {
+		date = t.Format("Jan 2, 2006")
+	}
+	venue := strings.TrimSpace(strings.TrimPrefix(n.Album, n.Date))
+	short, _, _ := strings.Cut(venue, ",")
+	sub := date
+	if venue != "" {
+		sub = fit.First(subtitlePx, rowWide-spare, date+" · "+venue, date+" · "+strings.TrimSpace(short))
+	}
+	return info(n.Artist, sub), true
+}
+
 // showRow is a year's row for one date: the date and venue on top, the city and the recording that
 // plays underneath, each shortened by dropping detail before anything is cut.
 //

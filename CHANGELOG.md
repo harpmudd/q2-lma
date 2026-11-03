@@ -5,7 +5,8 @@
 ## [0.5]
 
 - **Now playing comes first:** the song playing is the top row of the main menu and the show's
-  page, and stays there through the last song of a show.
+  page, and stays there through the last song of a show. On the main menu, the artist, date and
+  venue follow it.
 - **Nothing scrolls after Play Show:** messages are short, and long song names and errors run over
   two lines.
 - **Replays:** pressing Play on a show you've already heard starts it again straight away.

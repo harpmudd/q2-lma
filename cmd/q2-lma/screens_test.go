@@ -399,8 +399,11 @@ func TestPlayGuardAndNowRow(t *testing.T) {
 	if menu.Rows[0].Kind != q2spot.KindInfo || menu.Rows[0].Title != "Minglewood Blues" || !strings.HasPrefix(menu.Rows[0].Subtitle, "Loading") {
 		t.Errorf("menu's first row %+v", menu.Rows[0])
 	}
-	if menu.Rows[1].Title != "My Artists" || menu.Message != q2spot.Refresh {
-		t.Errorf("menu %q %+v", menu.Message, menu.Rows[1])
+	if menu.Rows[1].Title != "Grateful Dead" || menu.Rows[1].Subtitle != "May 8, 1977 · Barton Hall" {
+		t.Errorf("menu's show row %+v", menu.Rows[1])
+	}
+	if menu.Rows[2].Title != "My Artists" || menu.Message != q2spot.Refresh {
+		t.Errorf("menu %q %+v", menu.Message, menu.Rows[2])
 	}
 	close(hold)
 	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); time.Sleep(10 * time.Millisecond) {
