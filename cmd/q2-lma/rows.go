@@ -45,6 +45,31 @@ func fitRows(r *q2spot.Reply) {
 	}
 }
 
+// wrapped is an inert row whose text runs over its title and subtitle, then detail if there's room.
+func wrapped(text, detail string) q2spot.Row {
+	first, second := fit.Wrap(text, titlePx, rowWide-spare, subtitlePx, rowWide-spare)
+	return info(first, join(second, detail))
+}
+
+// nowRow is the row that says what the stream is on: the song, then whether it loads or plays. ok
+// is false when nothing streams, or rec isn't "" and isn't what streams.
+func (a *app) nowRow(rec string) (q2spot.Row, bool) {
+	n, ok := a.eng.NowPlaying()
+	if !ok || rec != "" && n.ID != rec {
+		return q2spot.Row{}, false
+	}
+	state := fmt.Sprintf("Playing %d of %d", n.Index+1, n.Total)
+	if !n.Ready {
+		state = fmt.Sprintf("Loading %d of %d", n.Index+1, n.Total)
+		if p := a.progress(); p.active && p.id == n.ID && p.index == n.Index && p.total > 0 {
+			state = fmt.Sprintf("Loading %d%% of %s", p.done*100/p.total, gb(p.total))
+		} else if strings.HasPrefix(n.State, "Waiting") {
+			state = "Waiting for archive.org"
+		}
+	}
+	return wrapped(n.Title, state), true
+}
+
 // showRow is a year's row for one date: the date and venue on top, the city and the recording that
 // plays underneath, each shortened by dropping detail before anything is cut.
 //

@@ -249,3 +249,24 @@ func TestSafeName(t *testing.T) {
 		t.Error("too long")
 	}
 }
+
+func TestLastSongCountsUntilItHasPlayed(t *testing.T) {
+	e, _ := engine(t, func(ctx context.Context, s *Session, i int, dst string) error { return write(dst) })
+	ss := songs(1)
+	ss[0].Seconds = 1
+	e.Start(Session{ID: "last.test", Songs: ss})
+	time.Sleep(300 * time.Millisecond)
+	n, ok := e.NowPlaying()
+	if !ok || n.Title != "Song 1" || !n.Ready || n.Total != 1 {
+		t.Errorf("while it plays: %+v %v", n, ok)
+	}
+	for end := time.Now().Add(3 * time.Second); e.Active() && time.Now().Before(end); {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if e.Active() {
+		t.Error("still active after the last song's length")
+	}
+	if _, ok := e.NowPlaying(); ok {
+		t.Error("a song shown after the session")
+	}
+}

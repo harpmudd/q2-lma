@@ -183,6 +183,9 @@ func (a *app) prefetch(id, date, rec string) {
 			a.log.Printf("prefetch %s: %v", rec, err)
 		} else if err == nil {
 			a.log.Printf("prefetched %s/%s", rec, s.Songs[0].File)
+			if a.eng.Current() == "" { // else the stream's next download trims, keeping its own show
+				stream.Evict(a.eng.Cache, a.eng.Cap(), rec, a.log.Printf)
+			}
 		}
 	}()
 }

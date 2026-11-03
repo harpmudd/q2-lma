@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	version   = "q2-v0.4"
-	userAgent = "q2-lma/0.4 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
+	version   = "q2-v0.5"
+	userAgent = "q2-lma/0.5 (Shanling Q2 card app; +https://github.com/HarpMudd/q2-lma)"
 	idleAfter = 15 * time.Minute // exit 0 after this long with no request, stream or load
 	answerIn  = 8 * time.Second  // a reply within this; the firmware gives up at 15 s
 )
@@ -43,23 +43,21 @@ type app struct {
 	eng                  *stream.Engine
 	loads                loader
 
-	mu           sync.Mutex
-	set          settings
-	lastReq      time.Time
-	confirmAt    time.Time // Clear Cache's first press
-	problem      string    // the last play or shuffle that failed, for the menu
-	problemAt    time.Time
-	sizeAt       time.Time // the cache's size, measured at most every 30 s
-	size         int64
-	names        sync.Map                 // artist identifier → name, from the lists sent
-	prog         progress                 // the download running now
-	failedRec    string                   // the recording the last failed play was for
-	starting     string                   // "<recording> <song>" while a play is being set up
-	calls        map[string]*call         // downloads running, by file (fetchShared)
-	pre          string                   // the file the latest prefetch fetches
-	covers       map[string]chan struct{} // recordings whose art is being or was fetched
-	speedLine    string                   // the last download speed test's result
-	speedRunning bool
+	mu        sync.Mutex
+	set       settings
+	lastReq   time.Time
+	confirmAt time.Time // Clear Cache's first press
+	problem   string    // the last play or shuffle that failed, for the menu
+	problemAt time.Time
+	sizeAt    time.Time // the cache's size, measured at most every 30 s
+	size      int64
+	names     sync.Map                 // artist identifier → name, from the lists sent
+	prog      progress                 // the download running now
+	failedRec string                   // the recording the last failed play was for
+	starting  string                   // "<recording> <song>" while a play is being set up
+	calls     map[string]*call         // downloads running, by file (fetchShared)
+	pre       string                   // the file the latest prefetch fetches
+	covers    map[string]chan struct{} // recordings whose art is being or was fetched
 }
 
 // settings is .lma/settings.json. It isn't in the release zip, so updates keep it.

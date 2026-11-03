@@ -159,9 +159,6 @@ func (a *app) answer(req q2spot.Request) q2spot.Reply {
 		return a.shuffle(ctx)
 	case "settings":
 		return a.settingsPage()
-	case "speedtest":
-		go a.speedTest()
-		return q2spot.Reply{Message: "Testing download speed: about 10 s"}
 	case "cachesize", "format", "clear":
 		return a.settingAction(req.Op)
 	case "details":
@@ -169,7 +166,7 @@ func (a *app) answer(req q2spot.Request) q2spot.Reply {
 	case "stop":
 		a.log.Printf("turned off from the Q2")
 		go func() { time.Sleep(500 * time.Millisecond); a.shutdown(); os.Exit(0) }()
-		return q2spot.Reply{Message: "Live Music Archive turned off"}
+		return q2spot.Reply{Message: "Turned off"}
 	}
 	a.log.Printf("unknown op %q %q", req.Op, req.Args)
 	return q2spot.Fail(q2spot.Unsupported, "Unknown request")
@@ -184,25 +181,26 @@ func (a *app) menu() q2spot.Reply {
 		mineSub, from = "Hold Play/Pause on any artist to add it", "From Top Artists"
 	}
 	s := a.settings()
-	rows := []q2spot.Row{
+	var rows []q2spot.Row
+	if now, ok := a.nowRow(""); ok {
+		rows = append(rows, now)
+	}
+	rows = append(rows,
 		list("mine", "", "My Artists", mineSub),
 		list("letters", "", "All Artists", "A to Z"),
 		list("top", "", "Top Artists", "Most played on the archive"),
-		{Kind: q2spot.KindSearch, Title: "Search Artists", Subtitle: "By name"},
+		q2spot.Row{Kind: q2spot.KindSearch, Title: "Search Artists", Subtitle: "By name"},
 		act("shuffle", "", "Shuffle a Show", from),
 		list("settings", "", "Settings", "Cache: "+gb(a.cacheSize())+" of "+gb(int64(s.CacheMB)<<20)),
-	}
-	active, line, serr := a.eng.Status()
+	)
+	active, _, serr := a.eng.Status()
 	off := "It also turns off after 15 minutes unused"
 	if active {
 		off = "It stays on while a show streams"
 	}
 	rows = append(rows, act("stop", "", "Turn Off Live Music Archive", off))
-	if active {
-		rows = append(rows, info(line, ""))
-	}
 	if msg := a.problemLine(serr); msg != "" {
-		rows = append(rows, info(msg, ""), list("details", "", "Details", ""))
+		rows = append(rows, wrapped(msg, ""), list("details", "", "Details", ""))
 	}
 	r := q2spot.Reply{Rows: rows}
 	if active {
@@ -241,10 +239,10 @@ func (a *app) details() q2spot.Reply {
 	a.mu.Unlock()
 	var rows []q2spot.Row
 	if serr != nil {
-		rows = append(rows, info(serr.Error(), serr.At.Local().Format("15:04")), info(fmt.Sprint(serr.Err), ""))
+		rows = append(rows, wrapped(serr.Error(), serr.At.Local().Format("15:04")), wrapped(fmt.Sprint(serr.Err), ""))
 	}
 	if msg != "" {
-		rows = append(rows, info(msg, at.Local().Format("15:04")))
+		rows = append(rows, wrapped(msg, at.Local().Format("15:04")))
 	}
 	rows = append(rows, info("More in .lma/log.txt on the card", ""))
 	return q2spot.Reply{Rows: rows}
@@ -618,17 +616,24 @@ func (a *app) play(ctx string) q2spot.Reply {
 	if err != nil {
 		return q2spot.Fail(q2spot.Bad, "Bad request")
 	}
-	// A second press of what is starting or playing leaves it be: starting again would throw away
-	// the download under way (seen on the Q2: a show pressed three times in 20 s, never playing).
+	// A second press while its first song still downloads leaves it be: starting again would throw
+	// the download away (seen on the Q2: a show pressed three times in 20 s, never playing). Once
+	// that song is on the card a press plays it again, the session or not. Toasts stay short: the
+	// firmware's scrolls what doesn't fit, so the song's name is left to the page's row (nowRow).
 	key := f[2] + " " + f[3]
+	loading := false
+	if id, from := a.eng.Playing(); id == f[2] && from == n {
+		nw, ok := a.eng.NowPlaying()
+		loading = !ok || !nw.Ready
+	}
 	a.mu.Lock()
 	starting := a.starting == key
-	if !starting {
+	if !starting && !loading {
 		a.starting = key
 	}
 	a.mu.Unlock()
-	if id, from := a.eng.Playing(); starting || id == f[2] && from == n {
-		return q2spot.Reply{Message: "Already started: it plays once its first song is on the Q2"}
+	if starting || loading {
+		return q2spot.Reply{Message: "Already loading"}
 	}
 	msg := "Loading…"
 	c, cancel := context.WithTimeout(context.Background(), answerIn/2)
@@ -637,13 +642,13 @@ func (a *app) play(ctx string) q2spot.Reply {
 	if songs := ia.Songs(files, a.settings().Prefer); ferr == nil && n >= 0 && n < len(songs) {
 		sg := songs[n]
 		if _, err := os.Stat(stream.SongPath(a.eng.Cache, f[2], sg)); err == nil {
-			msg = "Playing " + sg.Title
+			msg = "Playing"
 		} else {
 			rate := a.progress().rate
 			if rate <= 0 {
 				rate = 1.5e6 // measured on the Q2 over home Wi-Fi
 			}
-			msg = fmt.Sprintf("Loading %s: %s, about %d s", sg.Title, gb(sg.Size), int(float64(sg.Size)/rate)+2)
+			msg = fmt.Sprintf("Loading: about %d s", int(float64(sg.Size)/rate)+2)
 		}
 	}
 	a.mu.Lock()
@@ -674,38 +679,23 @@ func (a *app) play(ctx string) q2spot.Reply {
 	return q2spot.Reply{Message: msg}
 }
 
-// showStatus is the show page's live row while its recording streams: the song downloading (a
-// progress bar where the firmware has them), else what the stream does, and any failure; live
-// when the page should refresh.
+// showStatus is the show page's rows while its recording streams: the song and what it does, and
+// any failure; live when the page should refresh.
 func (a *app) showStatus(rec string) (rows []q2spot.Row, live bool) {
 	a.mu.Lock()
 	failed, problem := a.failedRec == rec, a.problem
 	a.mu.Unlock()
 	if failed {
-		return []q2spot.Row{info(problem, "Press Play Show to try again")}, false
+		return []q2spot.Row{wrapped(problem, "")}, false
 	}
 	if a.eng.Current() != rec {
 		return nil, false
 	}
-	p := a.progress()
-	_, line, serr := a.eng.Status()
-	switch {
-	case p.active && p.id == rec:
-		pml := 0
-		if p.total > 0 {
-			pml = int(p.done * 1000 / p.total)
-		}
-		title, sub := "Loading "+p.title, gb(p.done)+" of "+gb(p.total)
-		if a.capsHas("progress") {
-			rows = append(rows, q2spot.Row{Kind: q2spot.KindProgress, Title: title, Subtitle: sub, Position: strconv.Itoa(pml)})
-		} else {
-			rows = append(rows, info(title, sub))
-		}
-	case line != "":
-		rows = append(rows, info(line, ""))
+	if now, ok := a.nowRow(rec); ok {
+		rows = append(rows, now)
 	}
-	if serr != nil && time.Since(serr.At) < 10*time.Minute {
-		rows = append(rows, info(serr.Error(), ""))
+	if _, _, serr := a.eng.Status(); serr != nil && time.Since(serr.At) < 10*time.Minute {
+		rows = append(rows, wrapped(serr.Error(), ""))
 	}
 	return rows, true
 }
@@ -805,18 +795,11 @@ func (a *app) settingsPage() q2spot.Reply {
 	if n, _, err := diskSpace(a.card); err == nil {
 		free = "Card: " + gb(int64(n)) + " free"
 	}
-	a.mu.Lock()
-	speed := a.speedLine
-	a.mu.Unlock()
-	if speed == "" {
-		speed = "One connection against three at once"
-	}
 	v := strings.TrimPrefix(version, "q2-v")
 	return q2spot.Reply{Rows: []q2spot.Row{
 		act("cachesize", "", "Cache Size: "+gb(int64(s.CacheMB)<<20), gb(a.cacheSize())+" used"),
 		act("format", "", prefer, why),
 		act("clear", "", "Clear Cache", clear),
-		act("speedtest", "", "Test Download Speed", speed),
 		info(free, ""),
 		info("Version "+v, ""),
 	}}
@@ -861,7 +844,7 @@ func (a *app) settingAction(op string) q2spot.Reply {
 	}
 	a.mu.Unlock()
 	if !armed {
-		return q2spot.Reply{Message: "Press again to clear " + gb(a.cacheSize())}
+		return q2spot.Reply{Message: "Press again to clear"}
 	}
 	stream.Evict(a.eng.Cache, 0, a.playingID(), a.log.Printf)
 	a.ia.Cache.Clear()

@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.5]
+
+- **Now playing comes first:** the song playing is the top row of the main menu and the show's
+  page, and stays there through the last song of a show.
+- **Nothing scrolls after Play Show:** messages are short, and long song names and errors run over
+  two lines.
+- **Replays:** pressing Play on a show you've already heard starts it again straight away.
+- **Removed:** Test Download Speed.
+
 ## [0.4]
 
 The first release: browse and stream thousands of concerts from the Internet Archive's Live Music

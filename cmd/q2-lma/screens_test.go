@@ -19,8 +19,11 @@ import (
 
 // fakeArchive answers as archive.org does, from internal/ia's recorded responses; every song is
 // the start of a real Ogg (internal/tag's fixture).
-// downloads counts the fake archive's song downloads, by path.
-var downloads sync.Map
+// downloads counts the fake archive's song downloads, by path; gate, when set, holds them.
+var (
+	downloads sync.Map
+	gate      atomic.Pointer[chan struct{}]
+)
 
 func downloaded(file string) int32 {
 	n, ok := downloads.Load("/download/gd77-05-08.sbd.hicks.4982.sbeok.shnf/" + file)
@@ -48,6 +51,9 @@ func fakeArchive(t *testing.T) *httptest.Server {
 			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/metadata/"), "/files")
 			http.ServeFile(w, r, filepath.Join(ia, "files-"+id+".json"))
 		case strings.HasPrefix(r.URL.Path, "/download/") && strings.HasSuffix(r.URL.Path, ".ogg"):
+			if g := gate.Load(); g != nil {
+				<-*g
+			}
 			n, _ := downloads.LoadOrStore(r.URL.Path, new(atomic.Int32))
 			n.(*atomic.Int32).Add(1)
 			http.ServeFile(w, r, ogg)
@@ -80,6 +86,12 @@ func ask(t *testing.T, a *app, op string, args ...string) q2spot.Reply {
 		b, kept := r.Encode("1")
 		if kept != len(r.Rows) || len(b) > q2spot.MaxReply {
 			t.Fatalf("%s: %d of %d rows fit", op, kept, len(r.Rows))
+		}
+		// a toast scrolls what doesn't fit, so an action's is short; a list's message is an instruction
+		if r.Status == q2spot.OK || r.Status == "" {
+			if r.Message != q2spot.Refresh && r.Message != q2spot.Pages && !fit.Fits(r.Message, titlePx, rowWide-spare) {
+				t.Errorf("%s: toast %q would scroll", op, r.Message)
+			}
 		}
 		for _, row := range r.Rows {
 			if len(row.URI) > q2spot.MaxOp {
@@ -199,12 +211,8 @@ func TestBrowseToPlay(t *testing.T) {
 	a.change(func(s *settings) { delete(s.Picks, "GratefulDead 1977-05-08") })
 
 	// Play Show: the queue file and .play, then the first song lands tagged in the cache
-	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Loading Minglewood Blues") && !strings.HasPrefix(r.Message, "Playing Minglewood Blues") {
+	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Loading: about") && r.Message != "Playing" {
 		t.Errorf("play %q", r.Message)
-	}
-	// pressed again while it starts: left alone
-	if r := ask(t, a, "play", play.Context); !strings.HasPrefix(r.Message, "Already started") {
-		t.Errorf("second press %q", r.Message)
 	}
 	// the show page has a live first row while its recording streams
 	for end := time.Now().Add(3 * time.Second); a.eng.Current() == "" && time.Now().Before(end); {
@@ -310,7 +318,7 @@ func TestPrefetchOnShowPage(t *testing.T) {
 	if got := downloaded("gd77-05-08eaton-d1t02.ogg"); got != 0 {
 		t.Errorf("song 2 fetched before a play: %d", got)
 	}
-	if r := ask(t, a, "play", find(t, show, "Play Show").Context); !strings.HasPrefix(r.Message, "Playing Minglewood Blues") {
+	if r := ask(t, a, "play", find(t, show, "Play Show").Context); r.Message != "Playing" {
 		t.Errorf("play after the prefetch: %q", r.Message)
 	}
 	for end := time.Now().Add(5 * time.Second); downloaded("gd77-05-08eaton-d1t02.ogg") == 0 && time.Now().Before(end); {
@@ -363,5 +371,67 @@ func TestShowRowWording(t *testing.T) {
 		ia.Recording{ID: "gd77.sbd", Venue: "Arista Studios", Coverage: "Unknown, Unknown", Rating: 4})
 	if r.Subtitle != "SBD 4.0★" {
 		t.Errorf("%q", r.Subtitle)
+	}
+}
+
+// While the first song downloads a second press changes nothing; once it is on the card a press
+// plays again. The menu and the show page open with what streams.
+func TestPlayGuardAndNowRow(t *testing.T) {
+	downloads.Clear()
+	hold := make(chan struct{})
+	gate.Store(&hold)
+	defer gate.Store(nil)
+	a, _ := testApp(t)
+	rec := "gd77-05-08.sbd.hicks.4982.sbeok.shnf"
+	play := "GratefulDead 1977-05-08 " + rec + " 0"
+	if r := ask(t, a, "play", play); !strings.HasPrefix(r.Message, "Loading: about") {
+		t.Fatalf("first press %q", r.Message)
+	}
+	for end := time.Now().Add(3 * time.Second); time.Now().Before(end); time.Sleep(10 * time.Millisecond) {
+		if _, ok := a.eng.NowPlaying(); ok {
+			break
+		}
+	}
+	if r := ask(t, a, "play", play); r.Message != "Already loading" {
+		t.Errorf("second press %q", r.Message)
+	}
+	menu := ask(t, a, "menu")
+	if menu.Rows[0].Kind != q2spot.KindInfo || menu.Rows[0].Title != "Minglewood Blues" || !strings.HasPrefix(menu.Rows[0].Subtitle, "Loading") {
+		t.Errorf("menu's first row %+v", menu.Rows[0])
+	}
+	if menu.Rows[1].Title != "My Artists" || menu.Message != q2spot.Refresh {
+		t.Errorf("menu %q %+v", menu.Message, menu.Rows[1])
+	}
+	close(hold)
+	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); time.Sleep(10 * time.Millisecond) {
+		if n, ok := a.eng.NowPlaying(); ok && n.Ready {
+			break
+		}
+	}
+	if got := ask(t, a, "menu").Rows[0]; got.Subtitle != "Playing 1 of 20" {
+		t.Errorf("playing %+v", got)
+	}
+	if got := ask(t, a, "show", "GratefulDead 1977-05-08").Rows[0]; got.Title != "Minglewood Blues" {
+		t.Errorf("show's first row %+v", got)
+	}
+	if r := ask(t, a, "play", play); r.Message != "Playing" {
+		t.Errorf("press once it is on the card %q", r.Message)
+	}
+	// that press starts behind its reply: let it finish, so nothing writes as the card is removed
+	for end := time.Now().Add(3 * time.Second); time.Now().Before(end); time.Sleep(10 * time.Millisecond) {
+		a.mu.Lock()
+		idle := a.starting == ""
+		a.mu.Unlock()
+		if idle {
+			break
+		}
+	}
+	a.eng.Stop()
+}
+
+func TestWrappedRowsReadWhole(t *testing.T) {
+	r := wrapped("Scarlet Begonias-> Fire On The Mountain", "Playing 13 of 20")
+	if r.Title+" "+strings.TrimSuffix(r.Subtitle, " · Playing 13 of 20") != "Scarlet Begonias-> Fire On The Mountain" {
+		t.Errorf("%q / %q", r.Title, r.Subtitle)
 	}
 }
