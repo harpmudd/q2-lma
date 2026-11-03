@@ -8,6 +8,7 @@ import (
 	"q2-lma/internal/fit"
 	"q2-lma/internal/ia"
 	"q2-lma/internal/q2spot"
+	"q2-lma/internal/stream"
 )
 
 // A row's labels as Q2 Pod lays them out (coverflow.c page_row_detail, row_into; addon.c
@@ -51,43 +52,70 @@ func wrapped(text, detail string) q2spot.Row {
 	return info(first, join(second, detail))
 }
 
-// nowRow is the row that says what the stream is on: the song, then whether it loads or plays. ok
-// is false when nothing streams, or rec isn't "" and isn't what streams.
-func (a *app) nowRow(rec string) (q2spot.Row, bool) {
-	n, ok := a.eng.NowPlaying()
-	if !ok || rec != "" && n.ID != rec {
-		return q2spot.Row{}, false
+// nowState is how the stream's song stands: "1 of 20" once it plays, else how its download goes.
+func (a *app) nowState(n stream.Now) string {
+	if n.Ready {
+		return fmt.Sprintf("%d of %d", n.Index+1, n.Total)
 	}
-	state := fmt.Sprintf("Playing %d of %d", n.Index+1, n.Total)
-	if !n.Ready {
-		state = fmt.Sprintf("Loading %d of %d", n.Index+1, n.Total)
-		if p := a.progress(); p.active && p.id == n.ID && p.index == n.Index && p.total > 0 {
-			state = fmt.Sprintf("Loading %d%% of %s", p.done*100/p.total, gb(p.total))
-		} else if strings.HasPrefix(n.State, "Waiting") {
-			state = "Waiting for archive.org"
-		}
+	if p := a.progress(); p.active && p.id == n.ID && p.index == n.Index && p.total > 0 {
+		return fmt.Sprintf("Loading %d%%", p.done*100/p.total)
 	}
-	return wrapped(n.Title, state), true
+	if strings.HasPrefix(n.State, "Waiting") {
+		return "Waiting"
+	}
+	return "Loading"
 }
 
-// nowShowRow is the row under nowRow on the main menu: the artist, then the show's date and venue,
-// the venue shortened to its first part before anything is cut.
-func (a *app) nowShowRow() (q2spot.Row, bool) {
+// nowRow is the row a show's page opens with while it streams: the song, then how it stands.
+func (a *app) nowRow(rec string) (q2spot.Row, bool) {
+	n, ok := a.eng.NowPlaying()
+	if !ok || n.ID != rec {
+		return q2spot.Row{}, false
+	}
+	return wrapped(n.Title, a.nowState(n)), true
+}
+
+// nowMenuRow is the row the main menu opens with while a show streams: one row, so the menu keeps
+// its room.
+//
+//	Grateful Dead
+//	May 8, 1977 · Barton Hall · 1 of 20
+func (a *app) nowMenuRow() (q2spot.Row, bool) {
 	n, ok := a.eng.NowPlaying()
 	if !ok {
 		return q2spot.Row{}, false
 	}
-	date := n.Date
-	if t, err := time.Parse("2006-01-02", n.Date); err == nil {
+	return info(n.Artist, showLine(n.Date, n.Album, a.nowState(n))), true
+}
+
+// showLine is the date and venue and state on one line that fits: the date and state always, the
+// whole venue if there's room, else its first part, cut if it must be. album is the session's,
+// the date (YYYY-MM-DD) then the place.
+func showLine(day, album, state string) string {
+	date := day
+	if t, err := time.Parse("2006-01-02", day); err == nil {
 		date = t.Format("Jan 2, 2006")
 	}
-	venue := strings.TrimSpace(strings.TrimPrefix(n.Album, n.Date))
+	w := rowWide - spare
+	venue := strings.TrimSpace(strings.TrimPrefix(album, day))
 	short, _, _ := strings.Cut(venue, ",")
-	sub := date
-	if venue != "" {
-		sub = fit.First(subtitlePx, rowWide-spare, date+" · "+venue, date+" · "+strings.TrimSpace(short))
+	short = strings.TrimSpace(short)
+	if venue == "" {
+		return join(date, state)
 	}
-	return info(n.Artist, sub), true
+	line := func(v string) string { return join(date, v, state) }
+	if fit.Fits(line(venue), subtitlePx, w) {
+		return line(venue)
+	}
+	if fit.Fits(line(short), subtitlePx, w) {
+		return line(short)
+	}
+	// what the venue may take: all but the date, the state, and its two separators
+	room := w - fit.Width(join(date, state)+" · ", subtitlePx)
+	if room < fit.Width("Xxxxxxx…", subtitlePx) { // too little to read: the date and state alone
+		return join(date, state)
+	}
+	return line(fit.Cut(short, subtitlePx, room))
 }
 
 // showRow is a year's row for one date: the date and venue on top, the city and the recording that

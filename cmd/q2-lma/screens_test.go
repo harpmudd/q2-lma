@@ -396,14 +396,12 @@ func TestPlayGuardAndNowRow(t *testing.T) {
 		t.Errorf("second press %q", r.Message)
 	}
 	menu := ask(t, a, "menu")
-	if menu.Rows[0].Kind != q2spot.KindInfo || menu.Rows[0].Title != "Minglewood Blues" || !strings.HasPrefix(menu.Rows[0].Subtitle, "Loading") {
-		t.Errorf("menu's first row %+v", menu.Rows[0])
+	if got := menu.Rows[0]; got.Kind != q2spot.KindInfo || got.Title != "Grateful Dead" ||
+		!strings.HasPrefix(got.Subtitle, "May 8, 1977 · Barton Hall · Loading") {
+		t.Errorf("menu's first row %+v", got)
 	}
-	if menu.Rows[1].Title != "Grateful Dead" || menu.Rows[1].Subtitle != "May 8, 1977 · Barton Hall" {
-		t.Errorf("menu's show row %+v", menu.Rows[1])
-	}
-	if menu.Rows[2].Title != "My Artists" || menu.Message != q2spot.Refresh {
-		t.Errorf("menu %q %+v", menu.Message, menu.Rows[2])
+	if menu.Rows[1].Title != "My Artists" || menu.Message != q2spot.Refresh {
+		t.Errorf("menu %q %+v", menu.Message, menu.Rows[1])
 	}
 	close(hold)
 	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); time.Sleep(10 * time.Millisecond) {
@@ -411,10 +409,10 @@ func TestPlayGuardAndNowRow(t *testing.T) {
 			break
 		}
 	}
-	if got := ask(t, a, "menu").Rows[0]; got.Subtitle != "Playing 1 of 20" {
+	if got := ask(t, a, "menu").Rows[0]; got.Title != "Grateful Dead" || got.Subtitle != "May 8, 1977 · Barton Hall · 1 of 20" {
 		t.Errorf("playing %+v", got)
 	}
-	if got := ask(t, a, "show", "GratefulDead 1977-05-08").Rows[0]; got.Title != "Minglewood Blues" {
+	if got := ask(t, a, "show", "GratefulDead 1977-05-08").Rows[0]; got.Title != "Minglewood Blues" || got.Subtitle != "1 of 20" {
 		t.Errorf("show's first row %+v", got)
 	}
 	if r := ask(t, a, "play", play); r.Message != "Playing" {
@@ -430,6 +428,23 @@ func TestPlayGuardAndNowRow(t *testing.T) {
 		}
 	}
 	a.eng.Stop()
+}
+
+func TestShowLine(t *testing.T) {
+	for _, c := range []struct{ album, state, want string }{
+		{"1977-05-08 Barton Hall, Cornell University, Ithaca, NY", "1 of 20", "May 8, 1977 · Barton Hall · 1 of 20"},
+		{"1977-05-08 The Fillmore", "12 of 34", "May 8, 1977 · The Fillmore · 12 of 34"},
+		{"1977-05-08", "1 of 20", "May 8, 1977 · 1 of 20"},
+	} {
+		if got := showLine("1977-05-08", c.album, c.state); got != c.want {
+			t.Errorf("%q: %q, want %q", c.album, got, c.want)
+		}
+	}
+	// a long venue is what gives: the date and the count stay, and it all fits
+	got := showLine("2019-09-28", "2019-09-28 Red Rocks Amphitheatre and Visitors Center, Morrison, CO", "12 of 34")
+	if !strings.HasPrefix(got, "Sep 28, 2019 · Red Rocks") || !strings.HasSuffix(got, "… · 12 of 34") || !fit.Fits(got, subtitlePx, rowWide-spare) {
+		t.Errorf("long venue %q (%d px)", got, fit.Width(got, subtitlePx))
+	}
 }
 
 func TestWrappedRowsReadWhole(t *testing.T) {

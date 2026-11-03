@@ -182,11 +182,8 @@ func (a *app) menu() q2spot.Reply {
 	}
 	s := a.settings()
 	var rows []q2spot.Row
-	if now, ok := a.nowRow(""); ok {
+	if now, ok := a.nowMenuRow(); ok {
 		rows = append(rows, now)
-		if show, ok := a.nowShowRow(); ok {
-			rows = append(rows, show)
-		}
 	}
 	rows = append(rows,
 		list("mine", "", "My Artists", mineSub),

@@ -4,9 +4,9 @@
 
 ## [0.5]
 
-- **Now playing comes first:** the song playing is the top row of the main menu and the show's
-  page, and stays there through the last song of a show. On the main menu, the artist, date and
-  venue follow it.
+- **Now playing comes first:** while a show streams, the main menu opens with one row saying what
+  plays ("Grateful Dead", then "May 8, 1977 · Barton Hall · 1 of 20") and the show's page with the
+  song. It stays through the show's last song.
 - **Nothing scrolls after Play Show:** messages are short, and long song names and errors run over
   two lines.
 - **Replays:** pressing Play on a show you've already heard starts it again straight away.
