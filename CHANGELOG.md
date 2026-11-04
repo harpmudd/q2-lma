@@ -10,6 +10,8 @@
 - **Nothing scrolls after Play Show:** messages are short, and long song names and errors run over
   two lines.
 - **Replays:** pressing Play on a show you've already heard starts it again straight away.
+- **Scrobbling:** on Q2 Pod 1.6.5 or later, shows stay out of your scrobbles, as live recordings
+  don't match Last.fm's. They still count as plays.
 - **Removed:** Test Download Speed.
 
 ## [0.4]
