@@ -39,7 +39,7 @@ m-d-e-v/q2-qobuz#1). Where they agree, q2-lma does the same.
   as its subtitle, as Podcasts' "Turn Off Podcasts". The app exits after 15 minutes unused.
 - Only features the firmware lists in `/tmp/q2-addon.caps` are used: `progress` rows only with
   `progress`, otherwise `info` text.
-- `q2app`: `name=Live Music Archive`, `search=Search artists`, `qr=0`, `scrobble=0` (Q2 Pod 1.6.5+; older firmware ignores it). Icons `icon.png` (52 px) and
+- `q2app`: `name=Live Music Archive`, `search=Search artists`, `qr=0`. Users may add `scrobble=0` (Q2 Pod 1.6.5+); the release leaves it out. Icons `icon.png` (52 px) and
   `icon-40.png` (40 px), made from the llama logo; white on black, so the Minimal theme's greying
   suits it.
 
