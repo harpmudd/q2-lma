@@ -3,6 +3,8 @@
 Stream concerts from the Internet Archive's [Live Music Archive](https://archive.org/details/etree)
 on a Shanling Q2 running [Q2 Pod](https://github.com/DiamondBond/q2-pod).
 
+[Changelog](CHANGELOG.md)
+
 ## Install
 
 Requires Q2 Pod 1.6.0 or later.
@@ -50,9 +52,8 @@ In `.lma` on the card:
 
 ## Update and remove
 
-To update, unzip a new release over the old one: My Artists, settings and the cache stay. The
-[changelog](CHANGELOG.md) lists what each release changed. To remove the app, delete `.lma` from
-the card.
+To update, unzip a new release over the old one: My Artists, settings and the cache stay. To
+remove the app, delete `.lma` from the card.
 
 ## Build
 
