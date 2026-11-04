@@ -25,6 +25,12 @@ Open **Streaming → Live Music Archive** (it needs Wi-Fi).
 Played shows stay on the card, so replays start at once. When the cache is full (2 GB to start),
 the least recently played shows are deleted to make room.
 
+## Scrobbling
+
+On Q2 Pod 1.6.5 or later, shows stay out of your scrobbles, as live recordings don't match
+Last.fm's. They still count as plays. To scrobble them, delete the `scrobble=0` line from
+`.lma/q2app`. Updating the app puts the line back.
+
 ## Files
 
 In `.lma` on the card:
@@ -44,8 +50,9 @@ In `.lma` on the card:
 
 ## Update and remove
 
-To update, unzip a new release over the old one: My Artists, settings and the cache stay. To
-remove the app, delete `.lma` from the card.
+To update, unzip a new release over the old one: My Artists, settings and the cache stay. The
+[changelog](CHANGELOG.md) lists what each release changed. To remove the app, delete `.lma` from
+the card.
 
 ## Build
 

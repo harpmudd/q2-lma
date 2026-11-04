@@ -11,7 +11,8 @@
   two lines.
 - **Replays:** pressing Play on a show you've already heard starts it again straight away.
 - **Scrobbling:** on Q2 Pod 1.6.5 or later, shows stay out of your scrobbles, as live recordings
-  don't match Last.fm's. They still count as plays.
+  don't match Last.fm's. They still count as plays. To scrobble them, delete the `scrobble=0` line
+  from `.lma/q2app`.
 - **Removed:** Test Download Speed.
 
 ## [0.4]
