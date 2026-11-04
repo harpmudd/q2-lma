@@ -69,6 +69,27 @@ func Cut(s string, px, w int) string {
 	return strings.TrimRight(cut, " ,·-/") + "…"
 }
 
+// Wrap splits s over a row's two labels, so it reads whole rather than scrolling or being cut: as
+// much as fits the first at size px1 and width w1, broken at a space, and the rest in the second
+// (px2, w2), cut only if even that won't hold it.
+func Wrap(s string, px1, w1, px2, w2 int) (first, second string) {
+	if Fits(s, px1, w1) {
+		return s, ""
+	}
+	t, end := 0, 0
+	for i, r := range s {
+		if (t+em(r))*px1 > w1*1000 {
+			break
+		}
+		t += em(r)
+		end = i + utf8.RuneLen(r)
+	}
+	if sp := strings.LastIndex(s[:end], " "); sp > 0 {
+		end = sp
+	}
+	return s[:end], Cut(strings.TrimSpace(s[end:]), px2, w2)
+}
+
 // First is the first of options that fits w pixels at size px, else the last cut to fit.
 func First(px, w int, options ...string) string {
 	for _, o := range options {

@@ -29,6 +29,20 @@ func TestCut(t *testing.T) {
 	}
 }
 
+func TestWrap(t *testing.T) {
+	if a, b := Wrap("Loser", 20, 299, 16, 299); a != "Loser" || b != "" {
+		t.Errorf("%q %q", a, b)
+	}
+	s := "Scarlet Begonias-> Fire On The Mountain"
+	a, b := Wrap(s, 20, 299, 16, 299)
+	if a+" "+b != s || !Fits(a, 20, 299) || !Fits(b, 16, 299) {
+		t.Errorf("%q / %q", a, b)
+	}
+	if a, b := Wrap(strings.Repeat("x", 80), 20, 299, 16, 299); !Fits(a, 20, 299) || !Fits(b, 16, 299) || a == "" {
+		t.Errorf("no spaces: %q / %q", a, b)
+	}
+}
+
 func TestFirst(t *testing.T) {
 	if got := First(16, 100, "a very long first option indeed", "short"); got != "short" {
 		t.Errorf("%q", got)

@@ -111,6 +111,38 @@ func (e *Engine) Status() (active bool, line string, err *Err) {
 	return true, r.line(), err
 }
 
+// Now is the song a session is on: the one pressed until the firmware's .playing moves on.
+type Now struct {
+	ID, Title    string
+	Artist       string
+	Album, Date  string // the session's: "1977-05-08 Barton Hall, Cornell University", "1977-05-08"
+	Index, Total int
+	Ready        bool   // its file is on the card: it plays
+	State        string // what the session last did
+}
+
+// NowPlaying is the running session's song; ok is false when no session runs or it hasn't begun.
+func (e *Engine) NowPlaying() (n Now, ok bool) {
+	e.mu.Lock()
+	r := e.cur
+	e.mu.Unlock()
+	if r == nil {
+		return Now{}, false
+	}
+	select {
+	case <-r.done:
+		return Now{}, false
+	default:
+	}
+	p := r.now.Load()
+	if p == nil {
+		return Now{}, false
+	}
+	n = *p
+	n.State = r.line()
+	return n, true
+}
+
 // Busy reports whether a download runs now.
 func (e *Engine) Busy() bool {
 	e.mu.Lock()
@@ -255,6 +287,7 @@ type run struct {
 	trans     []int // passing failures waited out, per song
 	next      []time.Time
 	fetching  atomic.Bool
+	now       atomic.Pointer[Now]
 	state     atomic.Value // string
 	done      chan struct{}
 }
@@ -346,6 +379,9 @@ func (r *run) loop(ctx context.Context) {
 		if now != seen {
 			seen, since = now, time.Now()
 		}
+		r.now.Store(&Now{ID: r.s.ID, Title: r.s.Songs[cur].Title, Artist: r.s.Artist, Album: r.s.Album,
+			Date: r.s.Date, Index: cur, Total: len(r.paths),
+			Ready: exists(r.paths[cur])})
 		want := -1
 		for i := cur; i < len(r.paths) && i <= cur+Ahead; i++ {
 			if !exists(r.paths[i]) {
@@ -368,8 +404,12 @@ func (r *run) loop(ctx context.Context) {
 		}
 		if want < 0 {
 			r.set("Playing %d of %d: %s", cur+1, len(r.paths), r.s.Songs[cur].Title)
-			long := e.Idle + time.Duration(r.s.Songs[cur].Seconds)*time.Second
-			if cur == len(r.paths)-1 || time.Since(since) >= long {
+			// The last song: over once it has had time to play, so the screens show it till then.
+			// Any other: the firmware has left, or playback sits paused, once nothing new has
+			// played for Idle past the song's end.
+			song := time.Duration(r.s.Songs[cur].Seconds) * time.Second
+			last := cur == len(r.paths)-1
+			if last && time.Since(since) >= song || time.Since(since) >= e.Idle+song {
 				e.logf("stream %s over at %d", r.s.ID, cur)
 				return
 			}

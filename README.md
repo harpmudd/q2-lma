@@ -3,6 +3,8 @@
 Stream concerts from the Internet Archive's [Live Music Archive](https://archive.org/details/etree)
 on a Shanling Q2 running [Q2 Pod](https://github.com/DiamondBond/q2-pod).
 
+See the [changelog](CHANGELOG.md) for version history.
+
 ## Install
 
 Requires Q2 Pod 1.6.0 or later.
@@ -20,9 +22,10 @@ Open **Streaming → Live Music Archive** (it needs Wi-Fi).
 - Choose an artist, a year, then a show. The best recording plays: soundboard first, then the best
   rated. **More Versions** lists the others.
 - **Shuffle a Show** plays a random show by one of your artists.
-- **Settings:** cache size, Ogg or MP3, Clear Cache, Test Download Speed.
+- **Settings:** cache size, Ogg or MP3, Clear Cache.
 
-Played shows stay on the card until the cache is full (2 GB to start), so replays start at once.
+Played shows stay on the card, so replays start at once. When the cache is full (2 GB to start),
+the least recently played shows are deleted to make room.
 
 ## Files
 

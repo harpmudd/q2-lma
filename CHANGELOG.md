@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.5]
+
+- **Now playing comes first:** while a show streams, the main menu opens with one row saying what
+  plays ("Grateful Dead", then "May 8, 1977 · Barton Hall · 1 of 20") and the show's page with the
+  song. It stays through the show's last song.
+- **Nothing scrolls after Play Show:** messages are short, and long song names and errors run over
+  two lines.
+- **Replays:** pressing Play on a show you've already heard starts it again straight away.
+- **Scrobbling:** live recordings don't match Last.fm's, so on Q2 Pod 1.6.5 or later you can keep
+  shows out of your scrobbles: add a line `scrobble=0` to `.lma/q2app`. They still count as plays.
+  Updating the app replaces that file, so add the line again afterwards.
+- **Removed:** Test Download Speed.
+
 ## [0.4]
 
 The first release: browse and stream thousands of concerts from the Internet Archive's Live Music
@@ -19,13 +32,3 @@ Archive on your Shanling Q2.
 - **Shuffle a Show** from your artists, or from one artist.
 - **Replays from the card:** played shows stay until the cache size you choose is full.
 - **Made for the Q2:** lists never scroll, and the icon follows your theme.
-
-### Credits
-
-- **Q2 Pod firmware and its card-app platform:** Diamond Bond ([DiamondBond](https://github.com/DiamondBond)),
-  [q2-pod](https://github.com/DiamondBond/q2-pod)
-- **Streaming, launcher and packaging, after [q2-subsonic](https://github.com/andsuor/q2-subsonic):**
-  [andsuor](https://github.com/andsuor)
-- **Cover art in songs and HTTPS on the Q2, after [q2-podcasts](https://github.com/m-d-e-v/q2-podcasts):**
-  [m-d-e-v](https://github.com/m-d-e-v)
-- **The Live Music Archive:** the [Internet Archive](https://archive.org), and the tapers who share these shows

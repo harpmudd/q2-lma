@@ -32,7 +32,9 @@ q2-pod PRs #145-#150 and #163, and the maintainer's review m-d-e-v/q2-qobuz#1.
 
 - At most 8 card apps show in Streaming (`APPS_MAX`, peq.h:240), sorted by name. [C]
 - `q2app` is `key=value` lines: `name=` (row label, <= 31 bytes, default the id), `search=` (search
-  box hint), `qr=1` (show the QR page at first answer), `goto=1` (app answers the `goto` level). [C]
+  box hint), `qr=1` (show the QR page at first answer), `goto=1` (app answers the `goto` level),
+  `scrobble=0` (1.6.5: songs under `.<id>/` stay out of `.scrobbler.log` and still count as plays;
+  read at listen time, older firmware ignores it). [C]
 - `run` (Subsonic/Podcasts pattern): copy binary and itself to `/tmp`, `exec` from there (the card is
   never kept busy), background a restart loop (5 s doubling to 60 s on non-zero exit; exit 0 ends
   it), pid in `/tmp/q2-<id>`, second run exits while it's there, TERM passes to the app and KILLs
