@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.5.1]
+
+- **Scrobbling:** on Q2 Pod 1.6.5 or later, shows now stay out of your scrobbles, as live recordings
+  don't match Last.fm's. They still count as plays. To scrobble them, delete the `scrobble=0` line
+  from `.lma/q2app`; updating the app puts it back.
+
 ## [0.5]
 
 - **Now playing comes first:** while a show streams, the main menu opens with one row saying what
