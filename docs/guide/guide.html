@@ -89,7 +89,7 @@ figure.one img { display: block; width: 2.6in; margin: 0 auto 4pt; border-radius
 .legal { margin-top: 0.4in; padding-top: 0.12in; border-top: 0.6pt solid #b9bec2; font-size: 7.6pt; color: #777; }
 .m { position: absolute; font-size: 1px; color: #fff; }
 
-p, li, td { orphans: 3; widows: 3; }
+p, li, td { orphans: 3; widows: 3; text-wrap: pretty; } /* no one-word last lines */
 p { break-inside: avoid; }
 ul, ol, table, pre, .note, .shots, figure { break-inside: avoid; }
 p:has(+ ul), p:has(+ ol), p:has(+ table), p:has(+ pre), p:has(+ .shots), p:has(+ figure), h2, h3 { break-after: avoid; }
@@ -247,7 +247,7 @@ moe</pre>
   <h2 id="trouble">Troubleshooting</h2>
   <ul>
     <li><b>“No MP3 or Ogg files in this recording”:</b> it only has FLAC, which doesn’t play. Choose another in More Versions.</li>
-    <li><b>“Card full: streaming stopped”:</b> streaming needs 1 GB free on the card. Make room, or lower Cache Size.</li>
+    <li><b>“Card full: streaming stopped”:</b> the card has less than 1 GB free, usually because of your own music. Saved shows only fill up to Cache Size, so make room on the card, or lower Cache Size to delete older shows.</li>
     <li><b>“Not found on the archive”</b> in My Artists: a line in <code>my-artists.txt</code> doesn’t name an archive.org artist. Fix or remove it.</li>
     <li><b>Something went wrong:</b> the menu shows the last problem, with <b>Details</b>. More is in <code>.lma/log.txt</code> on the card.</li>
     <li><b>An artist is missing:</b> some well-known bands aren’t on the archive. Search finds those beyond each letter’s 500.</li>

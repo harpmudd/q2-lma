@@ -5,7 +5,7 @@ Mockups, not screenshots. The rows are the app's own, captured from it running o
 against archive.org (cmd/q2ctl), and already cut to fit by it. The page follows Q2 Pod's
 page_row_detail (coverflow.c) and the Minimal theme's numbers (test/coverflow.py): a 48 px title,
 64 px rows, text from x 36, a 20 px caption over a 16 px #AAAAAA detail at y 36, and the chevron
-at x 322. Arial Bold stands in for Liberation Sans Bold, whose widths it shares. The selection
+at x 322. Arial stands in for Liberation Sans, whose widths it shares. The selection
 and the status bar are drawn to look like the theme, not taken from it.
 
     python docs/guide/mockups.py            # writes docs/guide/shots/*.png
@@ -25,8 +25,9 @@ def font(name, px):
     return ImageFont.truetype(str(FONTS / name), px * S)
 
 
-CAP, DET, TTL, BARF = font("arialbd.ttf", 20), font("arial.ttf", 16), font("arialbd.ttf", 20), font("arialbd.ttf", 15)
+CAP, DET, TTL, BARF = font("arial.ttf", 20), font("arial.ttf", 16), font("arial.ttf", 20), font("arial.ttf", 15)
 STAR = font("seguisym.ttf", 15)  # Arial has no ★
+BG, SEL = "#161616", "#48484a"  # a softer black than the screen's, for print
 
 
 def label(d, x, y, text, f, fill):
@@ -55,7 +56,7 @@ def status_bar(d, playing):
 
 def page(name, title, rows, sel=0, playing=True):
     """rows: (caption, detail, chevron); detail None for a one-line row."""
-    im = Image.new("RGB", (W * S, H * S), "black")
+    im = Image.new("RGB", (W * S, H * S), BG)
     d = ImageDraw.Draw(im)
     status_bar(d, playing)
     d.text((W / 2 * S, (BAR + TITLE / 2) * S), title, font=TTL, fill="white", anchor="mm")
@@ -65,7 +66,7 @@ def page(name, title, rows, sel=0, playing=True):
         if y >= H:
             break
         if i == sel:
-            d.rounded_rectangle([8 * S, (y + 3) * S, (W - 8) * S, (y + ROW - 3) * S], radius=8 * S, fill="#2c2c2e")
+            d.rounded_rectangle([8 * S, (y + 3) * S, (W - 8) * S, (y + ROW - 3) * S], radius=8 * S, fill=SEL)
         if det is None:
             label(d, X * S, (y + ROW / 2) * S, cap, CAP, "white")
         else:
