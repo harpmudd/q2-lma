@@ -5,7 +5,7 @@
 Two passes: the first finds which page each heading lands on (via hidden @@id@@ markers read
 back with PyMuPDF), the second fills in the contents. Run mockups.py first if a screen changed.
 
-    python docs/guide/build.py [OUT.pdf]      # default: target/LMA-Mini-Guide.pdf
+    python docs/guide/build.py [OUT.pdf]      # default: docs/guide/LMA-Mini-Guide.pdf, the README's
 """
 import re, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -43,7 +43,7 @@ pages = {m: i + 1 for i, t in enumerate(text) for m in re.findall(r"@@([^@\s]+)@
 missing = set(re.findall(r"\{\{p:([^}]+)\}\}", src)) - pages.keys()
 if missing:
     sys.exit(f"headings not found in PDF: {sorted(missing)}")
-out = Path(sys.argv[1]) if len(sys.argv) > 1 else here.parent.parent / "target" / "LMA-Mini-Guide.pdf"
+out = Path(sys.argv[1]) if len(sys.argv) > 1 else here / "LMA-Mini-Guide.pdf"
 out.parent.mkdir(parents=True, exist_ok=True)
 render(re.sub(r"\{\{p:([^}]+)\}\}", lambda m: str(pages[m[1]]), src), out.resolve())
 print(f"wrote {out}")
