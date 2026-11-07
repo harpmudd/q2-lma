@@ -3,8 +3,8 @@
 Stream concerts from the Internet Archive's [Live Music Archive](https://archive.org/details/etree)
 on a Shanling Q2 running [Q2 Pod](https://github.com/DiamondBond/q2-pod).
 
-The [mini-guide](docs/guide/LMA-Mini-Guide.pdf) shows how to use the app. See the
-[changelog](CHANGELOG.md) for version history.
+The [mini-guide](https://github.com/harpmudd/q2-lma/raw/main/docs/guide/LMA-Mini-Guide.pdf) (PDF)
+shows how to use the app. See the [changelog](CHANGELOG.md) for version history.
 
 ## Install
 
