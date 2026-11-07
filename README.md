@@ -69,5 +69,4 @@ With Go 1.27 and Python 3, `contrib/shanlingq2/build.sh` writes `target/shanling
 
 ## License
 
-MIT (see [LICENSE](LICENSE)). `internal/tlsroots/cacert.pem` is Mozilla's CA list as curl
-publishes it (MPL-2.0). The Live Music Archive's llama logo belongs to the Internet Archive.
+MIT (see [LICENSE](LICENSE)).
