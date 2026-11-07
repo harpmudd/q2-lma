@@ -66,7 +66,8 @@ def page(name, title, rows, sel=0, playing=True):
         if y >= H:
             break
         if i == sel:
-            d.rounded_rectangle([8 * S, (y + 3) * S, (W - 8) * S, (y + ROW - 3) * S], radius=8 * S, fill=SEL)
+            # Rounded Corners' pill: the row inset SEL_INSET (6) a side, its ends h / 2 (navigation.c)
+            d.rounded_rectangle([6 * S, y * S, (W - 6) * S, (y + ROW) * S - 1], radius=ROW / 2 * S, fill=SEL)
         if det is None:
             label(d, X * S, (y + ROW / 2) * S, cap, CAP, "white")
         else:
