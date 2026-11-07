@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Live Music Archive for Q2 Pod</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+/* The look of the Q2 Pod User Guide (Diamond Bond, MIT; github.com/DiamondBond/q2-pod,
+   docs/manual/guide.html), cut to what this mini-guide uses, with .shots for paired mockups. */
+@page {
+  size: 8.5in 11in;
+  margin: 0.95in 1.3in 1in 1.55in;
+  @bottom-right { content: counter(page); font: 400 8.5pt "Open Sans", sans-serif; color: #222; vertical-align: top; padding-top: 0.25in; }
+  @bottom-left  { font: 400 8.5pt "Open Sans", sans-serif; color: #2a7fcf; vertical-align: top; padding-top: 0.25in; white-space: pre; }
+}
+@page cover { margin: 0; @bottom-right { content: none; } }
+@page toc { margin-left: 1.1in; @bottom-left { content: "Contents"; padding-left: 0.45in; } }
+@page ch1 { @bottom-left { content: "Chapter 1   Getting Started"; } }
+@page ch2 { @bottom-left { content: "Chapter 2   Finding and Playing Shows"; } }
+@page ch3 { @bottom-left { content: "Chapter 3   Settings and Help"; } }
+@page :first { @bottom-left { content: none; } }
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font: 400 9.6pt/1.5 "Open Sans", "Noto Sans", sans-serif; color: #222; }
+p { margin: 0 0 0.75em; }
+b, strong { font-weight: 600; }
+code { font: 8.6pt "DejaVu Sans Mono", Consolas, monospace; color: #333; }
+a { color: inherit; text-decoration: none; }
+
+/* Cover */
+.cover { page: cover; height: 11in; position: relative; }
+.cover .logo { position: absolute; top: 1.6in; left: 50%; width: 1.5in; margin-left: -0.75in; border-radius: 0.16in; }
+.cover h1 { position: absolute; top: 4.05in; width: 100%; text-align: center; margin: 0; font: 600 34pt/1.15 "Open Sans", sans-serif; color: #1d1d1f; letter-spacing: -0.5pt; }
+.cover h1 span { display: block; color: #a8a8a8; }
+.cover .fine { position: absolute; bottom: 0.8in; width: 100%; text-align: center; font-size: 8pt; color: #999; }
+
+/* Contents */
+.toc { page: toc; break-before: page; }
+.toc h1 { font: 600 22pt "Open Sans", sans-serif; margin: 0 0 0.25in 0.45in; color: #1d1d1f; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc li { display: flex; gap: 0.17in; line-height: 1.32; font-size: 9.2pt; }
+.toc li .n { width: 0.28in; text-align: right; font-weight: 600; flex: none; }
+.toc li.chap { margin-top: 0.09in; font-size: 11.5pt; color: #2a7fcf; break-after: avoid; }
+.toc li.chap .n { color: #222; font-size: 9.5pt; padding-top: 2.5pt; }
+.toc li.chap:first-child { margin-top: 0; }
+
+/* Chapters */
+.chapter { break-before: page; }
+.opener { display: flex; justify-content: space-between; align-items: flex-start; margin: 0.1in 0 0.45in; }
+.opener h1 { font: 600 20pt/1.2 "Open Sans", sans-serif; color: #1d1d1f; margin: 0.12in 0 0; }
+.opener .num { font: 600 64pt/0.9 "Open Sans", sans-serif; color: #1d1d1f; margin-right: -0.05in; }
+.lead { font: 400 14pt/1.35 "Open Sans", sans-serif; color: #2a7fcf; margin: 0 0 0.18in; }
+h2 { font: 400 15pt/1.25 "Open Sans", sans-serif; color: #2a7fcf; margin: 0.32in 0 0.06in; break-after: avoid; }
+h3 { font: 600 9.8pt/1.4 "Open Sans", sans-serif; margin: 0.16in 0 0.04in; break-after: avoid; }
+h2 + p, h3 + p { margin-top: 0; }
+h2 .hicon { width: 0.3in; height: 0.3in; vertical-align: -0.07in; margin-right: 0.08in; border-radius: 0.07in; }
+
+ul { margin: 0 0 0.8em; padding-left: 0.16in; }
+ul li { margin: 0 0 0.25em; }
+ul li::marker { content: "•  "; color: #555; }
+ol.steps { margin: 0 0 0.8em; padding-left: 0.22in; }
+ol.steps li { margin: 0 0 0.3em; padding-left: 0.04in; }
+ol.steps li::marker { font-weight: 600; color: #2a7fcf; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 0.08in 0 0.18in; font-size: 8.6pt; line-height: 1.4; }
+th { background: #8e959b; color: #fff; text-align: left; font-weight: 600; padding: 3pt 6pt; }
+td { padding: 4.5pt 6pt; border-bottom: 0.6pt solid #b9bec2; vertical-align: top; }
+td:first-child { font-weight: 600; width: 34%; }
+tr { break-inside: avoid; }
+
+/* Notes */
+.note { background: #f1f2f3; border-left: 3pt solid #8e959b; padding: 7pt 10pt; margin: 0.1in 0 0.18in; font-size: 9pt; break-inside: avoid; }
+.note.important { border-left-color: #2a7fcf; }
+.note p:last-child { margin: 0; }
+.note .label { font-weight: 600; }
+pre { background: #f1f2f3; padding: 7pt 10pt; font: 8.4pt/1.45 "DejaVu Sans Mono", Consolas, monospace; margin: 0.06in 0 0.16in; break-inside: avoid; white-space: pre-wrap; }
+
+/* Mockups: one centred as the guide's .shot, or two side by side, each with a caption */
+.shot { display: block; width: 2.6in; margin: 0.08in auto 0.18in; border-radius: 0.12in; }
+.shots { display: flex; justify-content: center; gap: 0.25in; margin: 0.1in 0 0.2in; break-inside: avoid; }
+.shots figure, figure.one { margin: 0; text-align: center; font-size: 7.6pt; color: #666; }
+.shots img { display: block; width: 2.45in; margin: 0 auto 4pt; border-radius: 0.11in; }
+figure.one { margin: 0.1in 0 0.2in; break-inside: avoid; }
+figure.one img { display: block; width: 2.6in; margin: 0 auto 4pt; border-radius: 0.12in; }
+.legal { margin-top: 0.4in; padding-top: 0.12in; border-top: 0.6pt solid #b9bec2; font-size: 7.6pt; color: #777; }
+.m { position: absolute; font-size: 1px; color: #fff; }
+
+p, li, td { orphans: 3; widows: 3; text-wrap: pretty; } /* no one-word last lines */
+p { break-inside: avoid; }
+ul, ol, table, pre, .note, .shots, figure { break-inside: avoid; }
+p:has(+ ul), p:has(+ ol), p:has(+ table), p:has(+ pre), p:has(+ .shots), p:has(+ figure), h2, h3 { break-after: avoid; }
+.sec { break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="cover">
+  <img class="logo" src="../../assets/lma-logo.png" alt="The Live Music Archive's llama">
+  <h1>Live Music Archive<span>for Q2 Pod</span></h1>
+  <div class="fine">A mini-guide to the app · version 0.5.1</div>
+</section>
+
+<!-- ============ CONTENTS ============ -->
+<section class="toc">
+  <h1>Contents</h1>
+  <ol>
+    <li class="chap"><span class="n">{{p:c1}}</span><a href="#c1">Chapter 1: Getting Started</a></li>
+    <li><span class="n">{{p:about}}</span><a href="#about">Live Music Archive</a></li>
+    <li><span class="n">{{p:install}}</span><a href="#install">Installing Live Music Archive</a></li>
+    <li><span class="n">{{p:menu}}</span><a href="#menu">The menu</a></li>
+
+    <li class="chap"><span class="n">{{p:c2}}</span><a href="#c2">Chapter 2: Finding and Playing Shows</a></li>
+    <li><span class="n">{{p:find}}</span><a href="#find">Finding a show</a></li>
+    <li><span class="n">{{p:play}}</span><a href="#play">Playing a show</a></li>
+    <li><span class="n">{{p:now}}</span><a href="#now">While a show plays</a></li>
+    <li><span class="n">{{p:mine}}</span><a href="#mine">My Artists</a></li>
+
+    <li class="chap"><span class="n">{{p:c3}}</span><a href="#c3">Chapter 3: Settings and Help</a></li>
+    <li><span class="n">{{p:settings}}</span><a href="#settings">Settings and the cache</a></li>
+    <li><span class="n">{{p:scrobble}}</span><a href="#scrobble">Scrobbling</a></li>
+    <li><span class="n">{{p:update}}</span><a href="#update">Updating and removing</a></li>
+    <li><span class="n">{{p:trouble}}</span><a href="#trouble">Troubleshooting</a></li>
+  </ol>
+</section>
+
+<!-- ============ CHAPTER 1 ============ -->
+<section class="chapter" style="page: ch1">
+  <div class="opener"><h1 id="c1">Getting Started</h1><div class="num">1</div></div>
+  <p class="lead">Install Live Music Archive and find your way around its menu.</p>
+
+  <div class="sec">
+  <h2 id="about"><img class="hicon" src="../../contrib/shanlingq2/icon.png" alt="">Live Music Archive</h2>
+  <p><b>Streaming → Live Music Archive</b> streams concerts from the Internet Archive’s Live Music Archive over Wi-Fi: thousands of artists who allow taping, from the Grateful Dead to bands touring today. Choose an artist, a year and a show, and the best recording plays. It isn’t in the firmware: it runs from the microSD card (see “Installing Live Music Archive”, below).</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="install">Installing Live Music Archive</h2>
+  <p>You need Q2 Pod 1.6.0 or later.</p>
+  <ol class="steps">
+    <li>Download <code>q2-lma-*.zip</code> from github.com/harpmudd/q2-lma/releases/latest.</li>
+    <li>Plug the Q2 into your computer with the USB-C cable. The card shows up as a drive.</li>
+    <li>Unzip the file to the card’s root, so the card has a <code>.lma</code> folder. On macOS and Linux the leading dot hides the folder; Cmd+Shift+. shows it in Finder.</li>
+    <li>Eject and unplug the Q2, then restart it.</li>
+  </ol>
+  <p>Or, over Wi-Fi: <b>System settings → App Store → Live Music Archive</b> downloads and installs it.</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="menu">The menu</h2>
+  <p>Open <b>Streaming → Live Music Archive</b>. It needs Wi-Fi.</p>
+  <figure class="one"><img src="shots/menu.png" alt="The menu: My Artists, All Artists, Top Artists and Search Artists">The menu</figure>
+  <ul>
+    <li><b>My Artists:</b> the artists you’ve saved. It starts empty (My Artists, in Chapter 2).</li>
+    <li><b>All Artists:</b> A to Z, each letter’s 500 most-played artists.</li>
+    <li><b>Top Artists:</b> the 500 most-played artists on the archive.</li>
+    <li><b>Search Artists:</b> type part of a name and press OK, to find the rest.</li>
+    <li><b>Shuffle a Show:</b> plays a random show by one of your artists, or from Top Artists while My Artists is empty.</li>
+    <li><b>Settings:</b> the cache size, Ogg or MP3, and Clear Cache (Chapter 3).</li>
+    <li><b>Turn Off Live Music Archive:</b> stops the app. It also turns itself off after 15 minutes unused, but never while a show streams.</li>
+  </ul>
+  </div>
+</section>
+
+<!-- ============ CHAPTER 2 ============ -->
+<section class="chapter" style="page: ch2">
+  <div class="opener"><h1 id="c2">Finding and Playing Shows</h1><div class="num">2</div></div>
+  <p class="lead">Pick an artist, a year and a show. The best recording plays.</p>
+
+  <div class="sec">
+  <h2 id="find">Finding a show</h2>
+  <p>An artist’s page starts with <b>Shuffle a Show</b>, for one of their shows at random, and <b>Add to My Artists</b> (or <b>Remove</b>). Then come their years, newest first, with how many recordings each has.</p>
+  <p>A year lists its shows by date. Each row has the venue, then the city, the best recording’s source and rating, and how many versions there are:</p>
+  <div class="shots">
+    <figure><img src="shots/artist.png" alt="Grateful Dead's page: Shuffle a Show, Remove from My Artists, 1977, 1976">An artist’s page</figure>
+    <figure><img src="shots/year.png" alt="1977's shows: May 5, May 7, May 8 at Barton Hall, May 9">A year’s shows</figure>
+  </div>
+  <p>The source says how it was taped: <b>SBD</b> (soundboard), <b>Matrix</b> (soundboard and audience mixed) or <b>AUD</b> (audience). Soundboard recordings play first, then matrix, then audience, best rated first.</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="play">Playing a show</h2>
+  <p>A show’s page starts with <b>Play Show</b>, which plays it from the start. Its detail is the recording that plays: source, rating, songs and length. <b>More Versions</b> lists the show’s other recordings; the one you pick plays from then on. Below come the songs: pick one to start the show there.</p>
+  <figure class="one"><img src="shots/show.png" alt="May 8 at Barton Hall: Play Show, More Versions, then the songs">A show’s page</figure>
+  <table>
+    <tr><th>Control</th><th>What it does</th></tr>
+    <tr><td>Centre</td><td>On an artist, year or show, opens it; on Play Show or a song, plays the show</td></tr>
+    <tr><td>Hold Play/Pause</td><td>On an artist, saves it to My Artists, or removes it when it’s already there</td></tr>
+    <tr><td>Return</td><td>Goes back a level</td></tr>
+  </table>
+  </div>
+
+  <div class="sec">
+  <h2 id="now">While a show plays</h2>
+  <p>The menu and the show’s page open with a row saying what plays: on the menu the artist, then the date, the venue and the song (<b>3 of 20</b>); on the show’s page the song’s name. While a song downloads, it says how far along it is.</p>
+  <div class="shots">
+    <figure><img src="shots/menu-playing.png" alt="The menu, its first row Grateful Dead, May 8, 1977, Barton Hall, 3 of 20">The menu</figure>
+    <figure><img src="shots/show-playing.png" alt="The show's page, its first row El Paso, 3 of 20">The show’s page</figure>
+  </div>
+  <p>Now Playing shows the artist, the show’s date and venue as the album, and its cover art, or the Live Music Archive llama when a show has none.</p>
+  <p>A song downloads whole before it plays, so a long first song takes a moment; the next ones download while you listen. A song already on the card says <b>On the Q2</b>. The Q2 doesn’t go into Standby while a song downloads.</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="mine">My Artists</h2>
+  <p>Hold Play/Pause on any artist, in any list or in search, to save it to My Artists; hold it again to remove it. Shuffle a Show on the menu picks from them.</p>
+  <p>You can also edit the list on a computer: it’s <code>my-artists.txt</code> in the card’s <code>.lma</code> folder, one artist a line. An artist is the end of its archive.org address, such as <code>GratefulDead</code> from archive.org/details/GratefulDead:</p>
+  <pre>GratefulDead
+WidespreadPanic
+moe</pre>
+  </div>
+</section>
+
+<!-- ============ CHAPTER 3 ============ -->
+<section class="chapter" style="page: ch3">
+  <div class="opener"><h1 id="c3">Settings and Help</h1><div class="num">3</div></div>
+  <p class="lead">Keep shows on the card, and find out what went wrong.</p>
+
+  <div class="sec">
+  <h2 id="settings">Settings and the cache</h2>
+  <p>Played shows stay on the card, so replays start at once.</p>
+  <figure class="one"><img src="shots/settings.png" alt="Settings: Cache Size, Prefer: Ogg, Clear Cache, and the card's free space">Settings</figure>
+  <ul>
+    <li><b>Cache Size:</b> how much of the card played shows may use: 512 MB, 1 GB, 2 GB (the default), 4 GB or 8 GB; press to step to the next. When the cache is full, the least recently played shows are deleted to make room.</li>
+    <li><b>Prefer:</b> Ogg (the default) has smaller files, so songs start sooner; press for MP3. A show without the one you prefer plays the other.</li>
+    <li><b>Clear Cache:</b> press it twice to delete the saved shows. The show that’s playing stays.</li>
+  </ul>
+  <p>The page also shows the card’s free space and the app’s version.</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="scrobble">Scrobbling</h2>
+  <p>Live recordings don’t match Last.fm’s albums, so with Q2 Pod 1.6.5 or later, shows stay out of your scrobbles. They still count as plays. To scrobble them, delete the <code>scrobble=0</code> line from <code>.lma/q2app</code> on the card; updating the app puts it back.</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="update">Updating and removing</h2>
+  <p>To update, unzip a newer release over it, or choose <b>Update</b> in the App Store. My Artists, your settings and saved shows stay.</p>
+  <p>To remove it, delete the <code>.lma</code> folder. Removing it in the App Store deletes the same folder, with My Artists and the saved shows.</p>
+  </div>
+
+  <div class="sec">
+  <h2 id="trouble">Troubleshooting</h2>
+  <ul>
+    <li><b>“No MP3 or Ogg files in this recording”:</b> it only has FLAC, which doesn’t play. Choose another in More Versions.</li>
+    <li><b>“Card full: streaming stopped”:</b> the card has less than 1 GB free, usually because of your own music. Saved shows only fill up to Cache Size, so make room on the card, or lower Cache Size to delete older shows.</li>
+    <li><b>“Not found on the archive”</b> in My Artists: a line in <code>my-artists.txt</code> doesn’t name an archive.org artist. Fix or remove it.</li>
+    <li><b>Something went wrong:</b> the menu shows the last problem, with <b>Details</b>. More is in <code>.lma/log.txt</code> on the card.</li>
+    <li><b>An artist is missing:</b> some well-known bands aren’t on the archive. Search finds those beyond each letter’s 500.</li>
+  </ul>
+  <div class="note important"><p><span class="label">Getting help:</span> report a problem at github.com/harpmudd/q2-lma/issues, with what you did, what happened, and <code>.lma/log.txt</code> from the card.</p></div>
+
+  <div class="legal">
+    <p>Live Music Archive for Q2 Pod is an independent project and is not affiliated with, endorsed by or sponsored by the Internet Archive or Shanling. The Live Music Archive and its llama logo belong to the Internet Archive; the shows belong to the artists and tapers who share them. Shanling and Q2 are trademarks of Shanling. Screens in this guide are mockups drawn from the app’s own pages, so your theme may look different. This guide follows the design of the Q2 Pod User Guide by Diamond Bond. The app and this guide are released under the MIT License.</p>
+  </div>
+  </div>
+</section>
+
+</body>
+</html>
